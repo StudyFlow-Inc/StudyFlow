@@ -1,0 +1,28 @@
+{
+  "name": "studyflow",
+  "version": "1.0.0",
+  "description": "studyflow",
+  "keywords": [
+    "study"
+  ],
+  "homepage": "https://github.com/StudyFlow-Inc/StudyFlow#readme",
+  "bugs": {
+    "url": "https://github.com/StudyFlow-Inc/StudyFlow/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/StudyFlow-Inc/StudyFlow.git"
+  },
+  "license": "ISC",
+  "author": "studyflow inc.",
+  "type": "commonjs",
+  "main": "studyflow.js",
+  "scripts": {
+    "test": "test"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  }
+}
