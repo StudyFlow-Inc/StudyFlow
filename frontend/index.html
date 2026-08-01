@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lernplaner – Dateneingabe</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>Lernplaner</h1>
+  <div id="active-user" class="active-user">Kein Profil aktiv</div>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="profil">Profil</button>
+  <button class="tab-btn" data-tab="kurse">Kurse</button>
+  <button class="tab-btn" data-tab="tasks">Tasks</button>
+  <button class="tab-btn" data-tab="kalender">Kalender</button>
+</nav>
+
+<main>
+
+  <!-- PROFIL -->
+  <section id="profil" class="tab-panel active">
+    <div class="grid">
+      <div class="card">
+        <h2>Profil anlegen</h2>
+        <form id="user-form">
+          <label>Name
+            <input type="text" id="userName" required>
+          </label>
+          <label>Studiengang
+            <input type="text" id="fieldOfStudy">
+          </label>
+          <label>Arbeit
+            <input type="text" id="employment" placeholder="z. B. Werkstudent, 15h/Woche">
+          </label>
+          <label>Wohnsituation
+            <input type="text" id="livingSituation" placeholder="z. B. WG, allein">
+          </label>
+          <button type="submit">Profil anlegen</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Bestehendes Profil wählen</h2>
+        <label>Profil
+          <select id="user-select"></select>
+        </label>
+        <button id="select-user-btn" type="button">Als aktiv setzen</button>
+        <p class="hint">Alle weiteren Eingaben (Kurse, Tasks, Kalender) beziehen sich immer auf das aktive Profil.</p>
+      </div>
+
+      <div class="card">
+        <h2>Einstellungen (UserPreferences)</h2>
+        <form id="preferences-form">
+          <label>Bevorzugte Lernzeit
+            <input type="text" id="preferredTime" placeholder="z. B. abends">
+          </label>
+          <label>Max. Stunden pro Tag
+            <input type="number" id="maxHoursPerDay" step="0.5">
+          </label>
+          <label>Pausenlänge (Min.)
+            <input type="number" id="breakDuration">
+          </label>
+          <label>Puffer vor Prüfung (Tage)
+            <input type="number" id="bufferBeforeExam">
+          </label>
+          <button type="submit">Einstellungen speichern</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- KURSE -->
+  <section id="kurse" class="tab-panel">
+    <div class="grid">
+      <div class="card">
+        <h2>Kurs hinzufügen</h2>
+        <form id="course-form">
+          <label>Kursname
+            <input type="text" id="courseName" required>
+          </label>
+          <label>Zeitaufwand gesamt (Std.)
+            <input type="number" id="workload" step="0.5">
+          </label>
+          <label>ECTS
+            <input type="number" id="ects">
+          </label>
+          <label>Priorität (1 = niedrig, 5 = hoch)
+            <input type="number" id="priority" min="1" max="5">
+          </label>
+          <button type="submit">Kurs anlegen</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card list-card">
+      <h2>Kurse</h2>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>ECTS</th><th>Zeitaufwand</th><th>Priorität</th><th></th></tr>
+        </thead>
+        <tbody id="course-list"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- TASKS -->
+  <section id="tasks" class="tab-panel">
+    <div class="grid">
+      <div class="card">
+        <h2>Task anlegen</h2>
+        <form id="task-form">
+          <label>Typ
+            <select id="discriminator">
+              <option value="LearnSession">Lernsession (an Kurs gebunden)</option>
+              <option value="FixedTask">Fester Termin (Arbeit/Freizeit/Training/...)</option>
+            </select>
+          </label>
+
+          <label>Bezeichnung
+            <input type="text" id="taskName" required>
+          </label>
+          <label>Beschreibung
+            <input type="text" id="description">
+          </label>
+          <label>Ort
+            <input type="text" id="location">
+          </label>
+          <label>Status
+            <select id="status">
+              <option value="offen">offen</option>
+              <option value="in Bearbeitung">in Bearbeitung</option>
+              <option value="erledigt">erledigt</option>
+            </select>
+          </label>
+
+          <div id="learnsession-fields" class="conditional-fields">
+            <label>Zugehöriger Kurs
+              <select id="task-course"></select>
+            </label>
+          </div>
+
+          <div id="fixedtask-fields" class="conditional-fields hidden">
+            <label>Art
+              <select id="type">
+                <option value="Arbeit">Arbeit</option>
+                <option value="Freizeit">Freizeit</option>
+                <option value="Training">Training</option>
+                <option value="Sonstiges">Sonstiges</option>
+              </select>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="recurring">
+              wiederkehrend
+            </label>
+          </div>
+
+          <button type="submit">Task anlegen</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card list-card">
+      <h2>Tasks</h2>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Typ</th><th>Status</th><th>Ort</th><th></th></tr>
+        </thead>
+        <tbody id="task-list"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- KALENDER -->
+  <section id="kalender" class="tab-panel">
+    <div class="grid">
+      <div class="card">
+        <h2>Kalendereintrag anlegen</h2>
+        <form id="entry-form">
+          <label>Task
+            <select id="entry-task"></select>
+          </label>
+          <label>Start
+            <input type="datetime-local" id="startDateTime" required>
+          </label>
+          <label>Ende
+            <input type="datetime-local" id="endDateTime" required>
+          </label>
+          <label>Erinnerung
+            <input type="text" id="reminder" placeholder="z. B. 30 Min. vorher">
+          </label>
+          <button type="submit">Eintrag anlegen</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card list-card">
+      <h2>Kalendereinträge</h2>
+      <table>
+        <thead>
+          <tr><th>Task</th><th>Start</th><th>Ende</th><th>Erinnerung</th><th></th></tr>
+        </thead>
+        <tbody id="entry-list"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
