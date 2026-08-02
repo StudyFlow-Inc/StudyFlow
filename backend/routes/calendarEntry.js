@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { toLocalISOString } = require('../scheduler');
 
 // alle CalendarEntries eines Users
 router.get('/user/:userID', (req, res) => {
@@ -43,7 +44,7 @@ router.put('/:id', (req, res) => {
       `${old.startDateTime} - ${old.endDateTime}`,
       `${startDateTime} - ${endDateTime}`,
       'manuell bearbeitet',
-      new Date().toISOString()
+      toLocalISOString(new Date())
     );
   }
 
@@ -71,14 +72,18 @@ router.put('/:id/reschedule', (req, res) => {
     `${old.startDateTime} - ${old.endDateTime}`,
     `${startDateTime} - ${endDateTime}`,
     reason,
-    new Date().toISOString()
+    toLocalISOString(new Date())
   );
 
   res.json({ rescheduled: true });
 });
 
 router.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM calendar_entry WHERE entryID = ?').run(req.params.id);
+  const info = db.prepare('DELETE FROM calendar_entry WHERE entryID = ?').run(req.params.id);
+  if (info.changes === 0) {
+    console.warn(`DELETE /calendar-entries/${req.params.id}: keine Zeile betroffen (existierte der Eintrag?)`);
+    return res.status(404).json({ deleted: false, error: 'Eintrag wurde nicht gefunden (evtl. bereits gelöscht).' });
+  }
   res.json({ deleted: true });
 });
 

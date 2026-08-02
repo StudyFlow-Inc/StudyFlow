@@ -6,6 +6,7 @@ const {
   allocateSessions,
   parsePreferredWindows,
   splitSlotsByPreference,
+  toLocalISOString,
 } = require('../scheduler');
 
 /**
@@ -189,15 +190,15 @@ router.post('/generate', (req, res) => {
       const info = insertEntry.run(
         userID,
         taskIdByCourse[a.courseID],
-        a.start.toISOString(),
-        a.end.toISOString(),
+        toLocalISOString(a.start),
+        toLocalISOString(a.end),
         null
       );
       return {
         entryID: info.lastInsertRowid,
         courseID: a.courseID,
-        start: a.start.toISOString(),
-        end: a.end.toISOString(),
+        start: toLocalISOString(a.start),
+        end: toLocalISOString(a.end),
       };
     });
 
@@ -221,7 +222,7 @@ router.post('/generate', (req, res) => {
  */
 router.post('/optimize', async (req, res) => {
   try {
-    const { userID, changeDescription, days = 14 } = req.body;
+    const { userID, changeDescription, rangeStart, rangeEnd, days = 14 } = req.body;
 
     if (!userID || !changeDescription) {
       return res.status(400).json({ error: 'userID und changeDescription sind erforderlich' });
@@ -242,9 +243,12 @@ router.post('/optimize', async (req, res) => {
       preferredTimesText = '';
     }
 
-    const now = new Date();
-    const horizon = new Date(now);
-    horizon.setDate(horizon.getDate() + days);
+    // Der Client schickt den aktuell angezeigten Zeitraum (Woche/Monat) mit -
+    // die KI darf sich NUR darin bewegen. Fallback auf "days" ab jetzt, falls
+    // aus irgendeinem Grund kein Zeitraum mitgeschickt wurde.
+    const now = rangeStart ? new Date(rangeStart) : new Date();
+    const horizon = rangeEnd ? new Date(rangeEnd) : new Date(new Date().setDate(new Date().getDate() + days));
+    const rangeDays = Math.max(1, Math.ceil((horizon - now) / 86_400_000));
 
     // ALLE Termine im Zeitraum holen - FixedTask + LearnSession
     const rows = db.prepare(`
@@ -255,11 +259,7 @@ router.post('/optimize', async (req, res) => {
       WHERE ce.userID = ?
         AND ce.startDateTime <= ? AND ce.endDateTime >= ?
       ORDER BY ce.startDateTime
-    `).all(userID, horizon.toISOString(), now.toISOString());
-
-    if (rows.length === 0) {
-      return res.json({ message: 'Keine Termine im Zeitraum gefunden.', candidates: [], rejected: [] });
-    }
+    `).all(userID, toLocalISOString(horizon), toLocalISOString(now));
 
     // editable: FixedTask darf immer angefasst werden (das IST die Änderung,
     // die beschrieben wird); LearnSession nur, wenn automatisch generiert
@@ -278,13 +278,53 @@ router.post('/optimize', async (req, res) => {
       };
     });
 
+    // Kurse mit offenem Lernbedarf, damit die KI auch NEUE Sessions
+    // vorschlagen kann, wenn danach gefragt wird ("Plane Sessions für X ein")
+    const plannedRows = db.prepare(`
+      SELECT t.courseID, ce.startDateTime, ce.endDateTime
+      FROM calendar_entry ce
+      JOIN task t ON t.taskID = ce.taskID
+      WHERE ce.userID = ? AND t.discriminator = 'LearnSession'
+    `).all(userID);
+    const plannedHoursByCourse = {};
+    for (const row of plannedRows) {
+      const hours = (new Date(row.endDateTime) - new Date(row.startDateTime)) / 3_600_000;
+      plannedHoursByCourse[row.courseID] = (plannedHoursByCourse[row.courseID] || 0) + hours;
+    }
+    const allCourses = db.prepare('SELECT * FROM course WHERE userID = ?').all(userID);
+    const courseNameByID = new Map(allCourses.map((c) => [c.courseID, c.courseName]));
+    const courses = allCourses
+      .map((c) => ({
+        courseName: c.courseName,
+        openHours: Math.max(0, (c.workload || 0) - (plannedHoursByCourse[c.courseID] || 0)),
+      }))
+      .filter((c) => c.openHours > 0);
+
+    // Freie Zeitfenster berechnen (abzüglich aller bestehenden Termine),
+    // damit die KI neue Sessions nur dort platzieren kann
+    const busyIntervals = rows.map((r) => ({
+      start: new Date(r.startDateTime),
+      end: new Date(r.endDateTime),
+    }));
+    const freeSlotWindows = generateFreeSlots({
+      startDate: now,
+      days: rangeDays,
+      dayStartHour: 8,
+      dayEndHour: 22,
+      busyIntervals,
+    }).map((s) => ({ start: toLocalISOString(s.start), end: toLocalISOString(s.end) }));
+
     const { requestRescheduleFromGemini } = require('../geminiClient');
     const result = await requestRescheduleFromGemini({
       apiKey,
       changeDescription,
       allEntries,
+      courses,
+      freeSlots: freeSlotWindows,
       maxHoursPerDay,
       preferredTimesText,
+      rangeStart: toLocalISOString(now),
+      rangeEnd: toLocalISOString(horizon),
     });
 
     const candidates = [];
@@ -336,19 +376,102 @@ router.post('/optimize', async (req, res) => {
 
       currentTimes.set(change.entryID, { start: newStart, end: newEnd });
       candidates.push({
+        action: 'move',
         entryID: change.entryID,
         type: info.discriminator,
         taskName: info.taskName,
         oldStart: info.startDateTime,
         oldEnd: info.endDateTime,
-        newStart: newStart.toISOString(),
-        newEnd: newEnd.toISOString(),
+        newStart: toLocalISOString(newStart),
+        newEnd: toLocalISOString(newEnd),
         reason: change.reason || changeDescription,
       });
     }
 
+    // Neue Einträge validieren (LearnSession ODER FixedTask):
+    // - LearnSession: Kurs muss existieren, Zeit muss vollständig in einem
+    //   freien Fenster liegen, Summe pro Kurs darf "openHours" nicht
+    //   überschreiten
+    // - FixedTask: braucht taskName + gültigen appointmentType, darf überall
+    //   liegen (kein freies-Fenster-Zwang), solange keine Überschneidung
+    // Beides: darf sich mit nichts überschneiden (auch nicht mit anderen
+    // neuen Einträgen)
+    const openHoursByCourse = new Map(courses.map((c) => [c.courseName, c.openHours]));
+    const validAppointmentTypes = ['Arbeit', 'Freizeit', 'Training', 'Sonstiges'];
+    let tempIdCounter = -1;
+
+    for (const s of result.newEntries || []) {
+      const newStart = new Date(s.start);
+      const newEnd = new Date(s.end);
+      if (isNaN(newStart) || isNaN(newEnd) || newEnd <= newStart) {
+        rejected.push({ ...s, rejectReason: 'ungültige Start-/Endzeit' });
+        continue;
+      }
+
+      const overlapsExisting = [...currentTimes.entries()].some(([, t]) => newStart < t.end && newEnd > t.start);
+      if (overlapsExisting) {
+        rejected.push({ ...s, rejectReason: 'überschneidet sich mit einem anderen Termin' });
+        continue;
+      }
+
+      if (s.entryType === 'LearnSession') {
+        const courseExists = allCourses.find((c) => c.courseName === s.courseName);
+        if (!courseExists) {
+          rejected.push({ ...s, rejectReason: 'unbekannter Kursname' });
+          continue;
+        }
+
+        const durationHours = (newEnd - newStart) / 3_600_000;
+        const remaining = openHoursByCourse.get(s.courseName) ?? 0;
+        if (durationHours > remaining + 0.01) {
+          rejected.push({ ...s, rejectReason: `überschreitet offenen Lernbedarf für ${s.courseName} (${remaining}h übrig)` });
+          continue;
+        }
+
+        const withinFreeSlot = freeSlotWindows.some(
+          (f) => newStart >= new Date(f.start) && newEnd <= new Date(f.end)
+        );
+        if (!withinFreeSlot) {
+          rejected.push({ ...s, rejectReason: 'liegt nicht vollständig in einem freien Zeitfenster' });
+          continue;
+        }
+
+        const tempID = tempIdCounter--;
+        currentTimes.set(tempID, { start: newStart, end: newEnd });
+        openHoursByCourse.set(s.courseName, remaining - durationHours);
+        candidates.push({
+          action: 'create',
+          entryType: 'LearnSession',
+          courseName: s.courseName,
+          courseID: courseExists.courseID,
+          newStart: toLocalISOString(newStart),
+          newEnd: toLocalISOString(newEnd),
+          reason: s.reason || changeDescription,
+        });
+      } else if (s.entryType === 'FixedTask') {
+        if (!s.taskName || !validAppointmentTypes.includes(s.appointmentType)) {
+          rejected.push({ ...s, rejectReason: 'taskName oder appointmentType fehlt/ungültig' });
+          continue;
+        }
+
+        const tempID = tempIdCounter--;
+        currentTimes.set(tempID, { start: newStart, end: newEnd });
+        candidates.push({
+          action: 'create',
+          entryType: 'FixedTask',
+          taskName: s.taskName,
+          appointmentType: s.appointmentType,
+          newStart: toLocalISOString(newStart),
+          newEnd: toLocalISOString(newEnd),
+          reason: s.reason || changeDescription,
+        });
+      } else {
+        rejected.push({ ...s, rejectReason: 'unbekannter entryType' });
+      }
+    }
+
     res.json({
-      message: result.summary || `${candidates.length} Termin(e) vorgeschlagen.`,
+      message: result.summary || `${candidates.length} Vorschlag/Vorschläge.`,
       candidates,
       rejected,
     });
@@ -384,11 +507,79 @@ router.post('/optimize/apply', (req, res) => {
       SELECT entryID, startDateTime, endDateTime FROM calendar_entry
       WHERE userID = ? AND entryID != ?
     `);
+    const allEntriesForUser = db.prepare(`
+      SELECT entryID, startDateTime, endDateTime FROM calendar_entry WHERE userID = ?
+    `);
+    const getExistingLearnTask = db.prepare(
+      `SELECT taskID FROM task WHERE courseID = ? AND discriminator = 'LearnSession' LIMIT 1`
+    );
+    const insertLearnTask = db.prepare(`
+      INSERT INTO task (taskName, description, location, status, discriminator, courseID)
+      VALUES (?, ?, ?, ?, 'LearnSession', ?)
+    `);
+    const insertEntry = db.prepare(`
+      INSERT INTO calendar_entry (userID, taskID, startDateTime, endDateTime, reminder, isManual)
+      VALUES (?, ?, ?, ?, NULL, 0)
+    `);
+    const getCourse = db.prepare('SELECT * FROM course WHERE courseID = ? AND userID = ?');
+
+    const insertFixedTask = db.prepare(`
+      INSERT INTO task (taskName, description, location, status, discriminator, type, recurring)
+      VALUES (?, ?, ?, ?, 'FixedTask', ?, 0)
+    `);
+    const insertManualEntry = db.prepare(`
+      INSERT INTO calendar_entry (userID, taskID, startDateTime, endDateTime, reminder, isManual)
+      VALUES (?, ?, ?, ?, NULL, 1)
+    `);
 
     const applied = [];
     const rejected = [];
 
     for (const c of candidates) {
+      if (c.action === 'create' && c.entryType === 'FixedTask') {
+        const newStart = new Date(c.newStart);
+        const newEnd = new Date(c.newEnd);
+        const overlaps = allEntriesForUser.all(userID).some((o) => {
+          return newStart < new Date(o.endDateTime) && newEnd > new Date(o.startDateTime);
+        });
+        if (overlaps) {
+          rejected.push({ ...c, rejectReason: 'überschneidet sich mittlerweile mit einem anderen Termin' });
+          continue;
+        }
+
+        const taskID = insertFixedTask.run(c.taskName, null, null, 'offen', c.appointmentType).lastInsertRowid;
+        const info = insertManualEntry.run(userID, taskID, toLocalISOString(newStart), toLocalISOString(newEnd));
+        applied.push({ action: 'create', entryType: 'FixedTask', entryID: info.lastInsertRowid, taskName: c.taskName, newStart: c.newStart, newEnd: c.newEnd });
+        continue;
+      }
+
+      if (c.action === 'create') {
+        const course = getCourse.get(c.courseID, userID);
+        if (!course) {
+          rejected.push({ ...c, rejectReason: 'Kurs existiert nicht mehr' });
+          continue;
+        }
+
+        const newStart = new Date(c.newStart);
+        const newEnd = new Date(c.newEnd);
+        const overlaps = allEntriesForUser.all(userID).some((o) => {
+          return newStart < new Date(o.endDateTime) && newEnd > new Date(o.startDateTime);
+        });
+        if (overlaps) {
+          rejected.push({ ...c, rejectReason: 'überschneidet sich mittlerweile mit einem anderen Termin' });
+          continue;
+        }
+
+        let taskID = getExistingLearnTask.get(c.courseID)?.taskID;
+        if (!taskID) {
+          taskID = insertLearnTask.run(`Lernen: ${course.courseName}`, null, null, 'offen', c.courseID).lastInsertRowid;
+        }
+        const info = insertEntry.run(userID, taskID, toLocalISOString(newStart), toLocalISOString(newEnd));
+        applied.push({ action: 'create', entryType: 'LearnSession', entryID: info.lastInsertRowid, courseName: c.courseName, newStart: c.newStart, newEnd: c.newEnd });
+        continue;
+      }
+
+      // action: 'move'
       const old = getEntry.get(c.entryID, userID);
       if (!old) {
         rejected.push({ ...c, rejectReason: 'Termin existiert nicht mehr' });
@@ -407,18 +598,18 @@ router.post('/optimize/apply', (req, res) => {
         continue;
       }
 
-      updateEntry.run(newStart.toISOString(), newEnd.toISOString(), c.entryID);
+      updateEntry.run(toLocalISOString(newStart), toLocalISOString(newEnd), c.entryID);
       logChange.run(
         c.entryID,
         `${old.startDateTime} - ${old.endDateTime}`,
-        `${newStart.toISOString()} - ${newEnd.toISOString()}`,
+        `${toLocalISOString(newStart)} - ${toLocalISOString(newEnd)}`,
         c.reason || changeDescription || 'KI-Anpassung',
-        new Date().toISOString()
+        toLocalISOString(new Date())
       );
-      applied.push({ entryID: c.entryID, type: c.type, newStart: c.newStart, newEnd: c.newEnd });
+      applied.push({ action: 'move', entryID: c.entryID, type: c.type, newStart: c.newStart, newEnd: c.newEnd });
     }
 
-    res.json({ message: `${applied.length} Termin(e) übernommen.`, applied, rejected });
+    res.json({ message: `${applied.length} Änderung(en) übernommen.`, applied, rejected });
   } catch (err) {
     console.error('Fehler in /api/schedule/optimize/apply:', err);
     res.status(500).json({ error: err.message });

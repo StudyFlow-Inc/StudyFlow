@@ -7,40 +7,60 @@
 
 const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
 
-function buildPrompt({ changeDescription, allEntries, maxHoursPerDay, preferredTimesText }) {
-  return `Du bist ein Assistent, der einen bestehenden Kalender/Lernplan bei Änderungen anpasst.
+function buildPrompt({ changeDescription, allEntries, courses, freeSlots, maxHoursPerDay, preferredTimesText, rangeStart, rangeEnd }) {
+  return `Du bist ein Assistent, der einen bestehenden Kalender/Lernplan pflegt.
 
-Es gab folgende Änderung, auf die reagiert werden muss: "${changeDescription}"
+Anfrage des Nutzers: "${changeDescription}"
 
-Alle relevanten Termine im Zeitraum (JSON, "entryID" ist der eindeutige Bezeichner):
+WICHTIG: Du darfst NUR innerhalb des Zeitraums ${rangeStart} bis ${rangeEnd} etwas ändern oder erstellen. Alles außerhalb bleibt unangetastet.
+
+Diese Anfrage kann mehreres bedeuten (auch kombiniert):
+A) Eine Änderung an einem bestehenden Termin (z. B. "Schicht X wurde bis 20 Uhr verlängert")
+   -> vorhandene Termine ggf. verschieben (siehe "changes" unten)
+B) Eine Bitte, NEUE Lernsessions einzuplanen (z. B. "Plane Lernsessions für Datenbanken diese Woche ein")
+   -> neue Einträge mit entryType "LearnSession" (siehe "newEntries" unten)
+C) Eine Bitte, einen NEUEN festen Termin anzulegen (z. B. "Zahnarzttermin Freitag 10-11 Uhr")
+   -> neuer Eintrag mit entryType "FixedTask" (siehe "newEntries" unten)
+
+Alle relevanten bestehenden Termine im Zeitraum (JSON, "entryID" ist der eindeutige Bezeichner):
 ${JSON.stringify(allEntries, null, 2)}
 
-Jeder Termin hat die Felder:
-- "type": "FixedTask" (fester Termin wie Arbeit/Freizeit/Training) oder "LearnSession" (Lernsession)
-- "editable": true oder false
-  - true = dieser Termin darf bei Bedarf verschoben/verändert werden
-  - false = dieser Termin ist geschützt und darf NIEMALS verändert werden (z. B. weil der Nutzer ihn manuell bearbeitet hat)
+Jeder bestehende Termin hat:
+- "type": "FixedTask" oder "LearnSession"
+- "editable": true (darf verschoben werden) oder false (geschützt, NIEMALS verändern)
 
-Deine Aufgabe:
-1. Falls die Änderungsbeschreibung eine konkrete Anpassung an einem bestehenden Termin beschreibt (z. B. "Schicht X wurde bis 20 Uhr verlängert"), identifiziere GENAU DIESEN einen Termin anhand von Name/Zeit und passe seine Zeit entsprechend an - aber NUR wenn "editable": true für ihn gilt.
-2. Prüfe danach, welche "LearnSession"-Termine mit "editable": true durch diese Änderung neu überschnitten würden, und verschiebe NUR diese in ein freies Zeitfenster.
-3. Termine mit "editable": false NIEMALS verändern, auch wenn sie betroffen scheinen.
-4. Verschiebe nichts, was nicht tatsächlich von der Änderung betroffen ist.
+Kurse mit noch offenem Lernbedarf (Stunden, die noch nicht verplant sind):
+${JSON.stringify(courses, null, 2)}
 
-Randbedingungen für neue Zeiten von LearnSessions:
-- Maximal ${maxHoursPerDay} Stunden Lernzeit pro Tag insgesamt
+Freie Zeitfenster für neue LernSessions (jede neue LearnSession MUSS vollständig innerhalb
+eines dieser Fenster liegen; für neue FixedTask-Termine gilt das NICHT, die dürfen zu jeder
+Zeit liegen, solange sie sich mit nichts überschneiden):
+${JSON.stringify(freeSlots, null, 2)}
+
+Randbedingungen:
+- Maximal ${maxHoursPerDay} Stunden Lernzeit pro Tag insgesamt (bestehende + neue LearnSessions zusammen)
 - Bevorzugte Lernzeiten, falls möglich einhalten: ${preferredTimesText || 'keine besonderen Präferenzen angegeben'}
-- Eine neue Zeit darf sich mit keinem anderen Termin überschneiden
+- Plane für einen Kurs nicht mehr Stunden neu ein, als bei ihm als "openHours" angegeben ist
+- Verschiebe nur Termine mit "editable": true, und nur wenn sie tatsächlich betroffen sind
+- Erfinde keine Kurse - nutze für "courseName" exakt einen Namen aus der Kursliste oben
+- Ein neuer FixedTask braucht einen sinnvollen "taskName" (z. B. "Zahnarzttermin") und "appointmentType" (einer von: Arbeit, Freizeit, Training, Sonstiges)
+- Kein neuer oder verschobener Termin darf sich mit einem bestehenden oder einem anderen neuen Termin überschneiden
+
+WICHTIG zum Zeitformat: Alle Datums-/Uhrzeitangaben oben sind LOKALE Uhrzeit (Wanduhrzeit), OHNE Zeitzonen-Suffix und OHNE "Z". Führe KEINE Umrechnung nach UTC oder in eine andere Zeitzone durch - behandle die Zahlen genau so, wie sie dastehen (z. B. bedeutet "09:00:00" wortwörtlich 9 Uhr morgens lokale Zeit). Gib deine Antwortzeiten im EXAKT GLEICHEN Format zurück: "YYYY-MM-DDTHH:MM:SS", ohne "Z", ohne Zeitzonen-Offset.
 
 Antworte AUSSCHLIESSLICH mit folgendem JSON-Format, ohne zusätzlichen Text, ohne Markdown-Codeblock:
 {
   "changes": [
-    { "entryID": <Zahl>, "newStart": "<ISO-8601-Datetime>", "newEnd": "<ISO-8601-Datetime>", "reason": "<kurzer Grund, 1 Satz>" }
+    { "entryID": <Zahl>, "newStart": "<YYYY-MM-DDTHH:MM:SS>", "newEnd": "<YYYY-MM-DDTHH:MM:SS>", "reason": "<kurzer Grund>" }
   ],
-  "summary": "<ein Satz, der die Anpassung insgesamt zusammenfasst>"
+  "newEntries": [
+    { "entryType": "LearnSession", "courseName": "<exakter Kursname>", "start": "<YYYY-MM-DDTHH:MM:SS>", "end": "<YYYY-MM-DDTHH:MM:SS>", "reason": "<kurzer Grund>" },
+    { "entryType": "FixedTask", "taskName": "<Bezeichnung>", "appointmentType": "<Arbeit|Freizeit|Training|Sonstiges>", "start": "<YYYY-MM-DDTHH:MM:SS>", "end": "<YYYY-MM-DDTHH:MM:SS>", "reason": "<kurzer Grund>" }
+  ],
+  "summary": "<ein Satz, der alles zusammenfasst>"
 }
 
-Wenn kein Termin betroffen ist, gib "changes": [] zurück.`;
+Wenn nichts verschoben werden muss, "changes": []. Wenn keine neuen Einträge gewünscht/nötig sind, "newEntries": [].`;
 }
 
 /**
@@ -52,10 +72,14 @@ async function requestRescheduleFromGemini({
   apiKey,
   changeDescription,
   allEntries,
+  courses,
+  freeSlots,
   maxHoursPerDay,
   preferredTimesText,
+  rangeStart,
+  rangeEnd,
 }) {
-  const prompt = buildPrompt({ changeDescription, allEntries, maxHoursPerDay, preferredTimesText });
+  const prompt = buildPrompt({ changeDescription, allEntries, courses, freeSlots, maxHoursPerDay, preferredTimesText, rangeStart, rangeEnd });
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
   const body = {

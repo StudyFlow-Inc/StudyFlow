@@ -362,16 +362,6 @@ async function requestScheduleGeneration(days, mode) {
 document.getElementById('generate-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
-
-  const isUpdate = document.getElementById('generate-btn').textContent.includes('aktualisieren');
-  if (isUpdate) {
-    const confirmed = confirm(
-      'Dadurch werden alle bisher automatisch generierten Lernsessions gelöscht und neu berechnet ' +
-      '(manuell angelegte/bearbeitete Termine bleiben erhalten). Fortfahren?'
-    );
-    if (!confirmed) return;
-  }
-
   try {
     const days = Number(document.getElementById('generate-days').value) || 14;
     let result = await requestScheduleGeneration(days);
@@ -395,64 +385,21 @@ document.getElementById('generate-form').addEventListener('submit', async (e) =>
 
 // ---------- KI-Anpassung ----------
 
-function formatCandidateLine(c) {
-  const oldTime = new Date(c.oldStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  const newTime = new Date(c.newStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  return `• ${c.taskName || 'Task ' + c.entryID} (${c.type}): ${oldTime} → ${newTime}`;
-}
-
 document.getElementById('optimize-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
   try {
     const changeDescription = document.getElementById('change-description').value;
-    const preview = await api('/schedule/optimize', {
+    const result = await api('/schedule/optimize', {
       method: 'POST',
       body: JSON.stringify({ userID: currentUserID, changeDescription }),
     });
 
-    if (!preview.candidates || preview.candidates.length === 0) {
-      showToast(preview.message || 'Keine Anpassung nötig.');
-      e.target.reset();
-      return;
-    }
-
-    const confirmed = confirm(
-      `Folgende Änderungen werden vorgeschlagen:\n\n` +
-      preview.candidates.map(formatCandidateLine).join('\n') +
-      `\n\nÜbernehmen?`
-    );
-    if (!confirmed) {
-      showToast('Änderungen verworfen.');
-      return;
-    }
-
-    const result = await api('/schedule/optimize/apply', {
-      method: 'POST',
-      body: JSON.stringify({ userID: currentUserID, changeDescription, candidates: preview.candidates }),
-    });
-
     showToast(result.message || 'Lernplan angepasst.');
     if (result.rejected && result.rejected.length > 0) {
-      console.warn('Beim Übernehmen abgelehnte Änderungen:', result.rejected);
+      console.warn('Von der KI vorgeschlagene, aber abgelehnte Änderungen:', result.rejected);
     }
     e.target.reset();
-    await loadEntries();
-  } catch (err) {
-    showToast('Fehler: ' + err.message, true);
-  }
-});
-
-// ---------- Rückgängig ----------
-
-document.getElementById('undo-btn').addEventListener('click', async () => {
-  if (!requireActiveUser()) return;
-  try {
-    const result = await api('/schedule/undo', {
-      method: 'POST',
-      body: JSON.stringify({ userID: currentUserID }),
-    });
-    showToast(result.message || 'Rückgängig gemacht.');
     await loadEntries();
   } catch (err) {
     showToast('Fehler: ' + err.message, true);
@@ -543,63 +490,6 @@ async function deleteEntry(entryID) {
   await loadEntries();
 }
 
-// ---------- Kalendereintrag bearbeiten (Popup bei Klick auf einen Termin) ----------
-
-const editEntryModal = document.getElementById('edit-entry-modal');
-let editingEntryID = null;
-
-function toLocalInputValue(isoString) {
-  const d = new Date(isoString);
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function openEditEntryModal(entry) {
-  editingEntryID = entry.entryID;
-  const task = taskInfoById[entry.taskID];
-  document.getElementById('edit-entry-task-name').textContent = task
-    ? `${task.taskName} (${task.discriminator})`
-    : `Task ${entry.taskID}`;
-  document.getElementById('edit-startDateTime').value = toLocalInputValue(entry.startDateTime);
-  document.getElementById('edit-endDateTime').value = toLocalInputValue(entry.endDateTime);
-  document.getElementById('edit-reminder').value = entry.reminder || '';
-  editEntryModal.classList.remove('hidden');
-}
-
-function closeEditEntryModal() {
-  editEntryModal.classList.add('hidden');
-  editingEntryID = null;
-}
-
-document.getElementById('close-edit-modal').addEventListener('click', closeEditEntryModal);
-editEntryModal.addEventListener('click', (e) => {
-  if (e.target === editEntryModal) closeEditEntryModal();
-});
-
-document.getElementById('edit-entry-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!editingEntryID) return;
-  try {
-    const body = {
-      startDateTime: document.getElementById('edit-startDateTime').value,
-      endDateTime: document.getElementById('edit-endDateTime').value,
-      reminder: document.getElementById('edit-reminder').value,
-    };
-    await api(`/calendar-entries/${editingEntryID}`, { method: 'PUT', body: JSON.stringify(body) });
-    showToast('Kalendereintrag aktualisiert.');
-    closeEditEntryModal();
-    await loadEntries();
-  } catch (err) {
-    showToast('Fehler: ' + err.message, true);
-  }
-});
-
-document.getElementById('delete-entry-btn').addEventListener('click', async () => {
-  if (!editingEntryID) return;
-  await deleteEntry(editingEntryID);
-  closeEditEntryModal();
-});
-
 function renderCalendar() {
   document.getElementById('calendar-container').innerHTML = '';
   if (calendarView === 'week') {
@@ -688,7 +578,7 @@ function renderWeekView() {
     chip.style.gridRow = `${startSlot + 2} / ${endSlot + 2}`;
     chip.textContent = task ? task.taskName : `Task ${en.taskID}`;
     chip.title = `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
-    chip.addEventListener('click', () => openEditEntryModal(en));
+    chip.addEventListener('click', () => deleteEntry(en.entryID));
     grid.appendChild(chip);
   });
 
@@ -741,7 +631,7 @@ function renderMonthView() {
       const chip = document.createElement('div');
       chip.className = `event-chip ${eventClassFor(task)}`;
       chip.textContent = `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} ${task ? task.taskName : ''}`;
-      chip.addEventListener('click', () => openEditEntryModal(en));
+      chip.addEventListener('click', () => deleteEntry(en.entryID));
       cell.appendChild(chip);
     });
 

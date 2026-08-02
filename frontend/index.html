@@ -217,7 +217,6 @@
           <span id="cal-label"></span>
           <button type="button" id="cal-next">›</button>
           <button type="button" id="cal-today" class="secondary">Heute</button>
-          <button type="button" id="undo-btn" class="secondary" title="Letzte Änderung rückgängig machen">↺ Rückgängig</button>
         </div>
         <button type="button" id="open-entry-modal-btn" class="add-fab" title="Kalendereintrag anlegen">+</button>
       </div>
@@ -248,33 +247,6 @@
         <input type="text" id="reminder" placeholder="z. B. 30 Min. vorher">
       </label>
       <button type="submit">Eintrag anlegen</button>
-    </form>
-  </div>
-</div>
-
-<!-- POPUP: Kalendereintrag bearbeiten/löschen -->
-<div id="edit-entry-modal" class="modal-overlay hidden">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Kalendereintrag bearbeiten</h2>
-      <button type="button" id="close-edit-modal" class="modal-close" aria-label="Schließen">&times;</button>
-    </div>
-    <form id="edit-entry-form">
-      <label>Task</label>
-      <p id="edit-entry-task-name" class="hint"></p>
-      <label>Start
-        <input type="datetime-local" id="edit-startDateTime" required>
-      </label>
-      <label>Ende
-        <input type="datetime-local" id="edit-endDateTime" required>
-      </label>
-      <label>Erinnerung
-        <input type="text" id="edit-reminder">
-      </label>
-      <div class="modal-actions">
-        <button type="submit">Speichern</button>
-        <button type="button" id="delete-entry-btn" class="secondary">Löschen</button>
-      </div>
     </form>
   </div>
 </div>

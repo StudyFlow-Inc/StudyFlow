@@ -179,9 +179,28 @@ function splitSlotsByPreference(freeSlots, preferredWindows) {
   return { preferred, other };
 }
 
+/**
+ * Formatiert ein Date als "YYYY-MM-DDTHH:MM:SS" in LOKALER Zeit, ohne "Z"
+ * oder Zeitzonen-Offset. Bewusst NICHT date.toISOString() (das würde immer
+ * nach UTC konvertieren) - manuell angelegte Kalendereinträge (aus dem
+ * <input type="datetime-local">) werden ebenfalls ohne Zeitzone
+ * gespeichert, daher muss diese Funktion überall genutzt werden, wo
+ * automatisch berechnete/von der KI vorgeschlagene Zeiten in dieselbe
+ * Spalte geschrieben oder der KI als Kontext gezeigt werden - sonst
+ * entsteht ein Versatz um die lokale UTC-Differenz (z. B. 2h im Sommer).
+ */
+function toLocalISOString(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
 module.exports = {
   generateFreeSlots,
   allocateSessions,
   parsePreferredWindows,
   splitSlotsByPreference,
+  toLocalISOString,
 };
