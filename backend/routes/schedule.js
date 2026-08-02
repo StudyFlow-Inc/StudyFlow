@@ -327,6 +327,15 @@ router.post('/optimize', async (req, res) => {
       rangeEnd: toLocalISOString(horizon),
     });
 
+    if (result.needsClarification) {
+      return res.json({
+        needsClarification: true,
+        question: result.clarifyingQuestion || 'Kannst du das genauer beschreiben?',
+        candidates: [],
+        rejected: [],
+      });
+    }
+
     const candidates = [];
     const rejected = [];
 

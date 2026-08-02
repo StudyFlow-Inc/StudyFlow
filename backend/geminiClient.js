@@ -54,6 +54,12 @@ Randbedingungen:
 
 WICHTIG zum Zeitformat: Alle Datums-/Uhrzeitangaben oben sind LOKALE Uhrzeit (Wanduhrzeit), OHNE Zeitzonen-Suffix und OHNE "Z". Führe KEINE Umrechnung nach UTC oder in eine andere Zeitzone durch - behandle die Zahlen genau so, wie sie dastehen (z. B. bedeutet "09:00:00" wortwörtlich 9 Uhr morgens lokale Zeit). Gib deine Antwortzeiten im EXAKT GLEICHEN Format zurück: "YYYY-MM-DDTHH:MM:SS", ohne "Z", ohne Zeitzonen-Offset.
 
+Falls die Anfrage mehrdeutig ist (z. B. mehrere Termine passen gleichermaßen zur Beschreibung,
+oder eine notwendige Angabe fehlt - etwa welcher Kurs gemeint ist oder wie lange eine neue
+Session dauern soll): STELLE STATTDESSEN EINE EINZIGE, KURZE RÜCKFRAGE, statt zu raten. Setze
+dafür "needsClarification": true und "clarifyingQuestion" auf die Frage, und lasse "changes",
+"newEntries", "deletions" und "renames" leer.
+
 Antworte AUSSCHLIESSLICH mit folgendem JSON-Format, ohne zusätzlichen Text, ohne Markdown-Codeblock:
 {
   "changes": [
@@ -69,6 +75,8 @@ Antworte AUSSCHLIESSLICH mit folgendem JSON-Format, ohne zusätzlichen Text, ohn
   "renames": [
     { "entryID": <Zahl>, "newName": "<neue Bezeichnung>", "reason": "<kurzer Grund>" }
   ],
+  "needsClarification": <true oder false>,
+  "clarifyingQuestion": "<Frage an den Nutzer, nur falls needsClarification true ist, sonst leer>",
   "summary": "<ein Satz, der alles zusammenfasst>"
 }
 

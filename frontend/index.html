@@ -8,246 +8,324 @@
 </head>
 <body>
 
-<header class="topbar">
-  <h1>StudyFlow</h1>
-  <div id="active-user" class="active-user">Kein Profil aktiv</div>
-</header>
+<div class="app-shell">
 
-<nav class="tabs">
-  <button class="tab-btn active" data-tab="profil">Profil</button>
-  <button class="tab-btn" data-tab="kurse">Kurse</button>
-  <button class="tab-btn" data-tab="tasks">Tasks</button>
-  <button class="tab-btn" data-tab="kalender">Kalender</button>
-</nav>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark">SF</span>
+      <span class="brand-name">StudyFlow</span>
+    </div>
+    <nav class="side-nav" aria-label="Hauptnavigation">
+      <button class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">🏠</span><span data-i18n="nav.dashboard">Dashboard</span></button>
+      <button class="nav-item" data-view="kalender"><span class="nav-icon" aria-hidden="true">📅</span><span data-i18n="nav.kalender">Kalender</span></button>
+      <button class="nav-item" data-view="kurse"><span class="nav-icon" aria-hidden="true">📘</span><span data-i18n="nav.kurse">Kurse</span></button>
+      <button class="nav-item" data-view="ki"><span class="nav-icon" aria-hidden="true">🤖</span><span data-i18n="nav.ki">KI-Assistent</span></button>
+      <button class="nav-item" data-view="profil"><span class="nav-icon" aria-hidden="true">👤</span><span data-i18n="nav.profil">Profil &amp; Einstellungen</span></button>
+    </nav>
+  </aside>
 
-<main>
+  <div class="main-area">
 
-  <!-- PROFIL -->
-  <section id="profil" class="tab-panel active">
-    <div class="grid">
-      <div class="card">
-        <h2>Profil anlegen</h2>
-        <form id="user-form">
-          <label>Name
-            <input type="text" id="userName" required>
-          </label>
-          <label>Studiengang
-            <input type="text" id="fieldOfStudy">
-          </label>
-          <label>Arbeit
-            <input type="text" id="employment" placeholder="z. B. Werkstudent, 15h/Woche">
-          </label>
-          <label>Wohnsituation
-            <input type="text" id="livingSituation" placeholder="z. B. WG, allein">
-          </label>
-          <button type="submit">Profil anlegen</button>
-        </form>
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button id="hamburger-btn" class="hamburger" data-i18n-aria-label="topbar.menuOpen" aria-label="Menü öffnen">☰</button>
+      <div class="search-wrap">
+        <input type="search" id="global-search" data-i18n-placeholder="topbar.searchPlaceholder" placeholder="Kurse, Termine, Aufgaben durchsuchen…" data-i18n-aria-label="topbar.search" aria-label="Suche">
+        <div id="search-results" class="search-results hidden"></div>
       </div>
-
-      <div class="card">
-        <h2>Bestehendes Profil wählen</h2>
-        <label>Profil
-          <select id="user-select"></select>
-        </label>
-        <button id="select-user-btn" type="button">Als aktiv setzen</button>
-        <p class="hint">Alle weiteren Eingaben (Kurse, Tasks, Kalender) beziehen sich immer auf das aktive Profil.</p>
+      <div class="topbar-actions">
+        <div id="active-user" class="active-user empty">Kein Profil aktiv</div>
+        <button id="lang-toggle" class="icon-btn" data-i18n-title="topbar.langToggle" title="Sprache wechseln" data-i18n-aria-label="topbar.langToggle" aria-label="Sprache wechseln">DE</button>
+        <button id="theme-toggle" class="icon-btn" data-i18n-title="topbar.themeToggle" title="Theme wechseln" data-i18n-aria-label="topbar.themeToggle" aria-label="Theme wechseln">🌙</button>
       </div>
+    </header>
 
-      <div class="card">
-        <h2>Einstellungen (UserPreferences)</h2>
-        <form id="preferences-form">
-          <label>Bevorzugte Lernzeiten (ab)</label>
-          <div id="preferred-times-list" class="repeatable-list">
-            <div class="repeatable-row">
-              <input type="time" class="preferredTime-input">
-              <button type="button" class="secondary remove-time-btn">Entfernen</button>
+    <main>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view active">
+        <h1 class="view-title" data-i18n="dashboard.title">Dashboard</h1>
+        <div class="grid">
+          <div class="card">
+            <h2><span class="cat-icon cat-termine" aria-hidden="true">📅</span> <span data-i18n="dashboard.today">Heutige Termine</span></h2>
+            <ul id="dashboard-today" class="plain-list"><li class="hint" data-i18n="dashboard.noProfile">Kein Profil aktiv.</li></ul>
+          </div>
+          <div class="card">
+            <h2><span class="cat-icon cat-tasks" aria-hidden="true">✓</span> <span data-i18n="dashboard.openTasks">Offene Aufgaben</span></h2>
+            <ul id="dashboard-open-tasks" class="plain-list"><li class="hint" data-i18n="dashboard.noProfile">Kein Profil aktiv.</li></ul>
+          </div>
+          <div class="card">
+            <h2 data-i18n="dashboard.quickAccess">Schnellzugriff</h2>
+            <div class="quick-links">
+              <button type="button" class="quick-link" data-view="ki"><span class="cat-icon cat-ki" aria-hidden="true">🤖</span> <span data-i18n="nav.ki">KI-Assistent</span></button>
+              <button type="button" class="quick-link" data-view="kurse"><span class="cat-icon cat-kurse" aria-hidden="true">📘</span> <span data-i18n="nav.kurse">Kurse</span></button>
+              <button type="button" class="quick-link" data-view="kalender"><span class="cat-icon cat-termine" aria-hidden="true">📅</span> <span data-i18n="nav.kalender">Kalender</span></button>
+              <button type="button" class="quick-link" data-view="profil"><span class="nav-icon" aria-hidden="true">👤</span> <span data-i18n="quicklink.profil">Profil</span></button>
             </div>
           </div>
-          <button type="button" id="add-time-btn" class="secondary">+ Uhrzeit hinzufügen</button>
-          <label>Max. Stunden pro Tag
-            <input type="number" id="maxHoursPerDay" step="0.5">
-          </label>
-          <label>Pausenlänge (Min.)
-            <input type="number" id="breakDuration">
-          </label>
-          <label>Puffer vor Prüfung (Tage)
-            <input type="number" id="bufferBeforeExam">
-          </label>
-          <button type="submit">Einstellungen speichern</button>
-        </form>
-      </div>
-    </div>
-  </section>
+        </div>
+      </section>
 
-  <!-- KURSE -->
-  <section id="kurse" class="tab-panel">
-    <div class="grid">
-      <div class="card">
-        <h2>Kurs hinzufügen</h2>
-        <form id="course-form">
-          <label>Kursname
-            <input type="text" id="courseName" required>
-          </label>
-          <label>Zeitaufwand gesamt (Std.)
-            <input type="number" id="workload" step="0.5">
-          </label>
-          <label>ECTS
-            <input type="number" id="ects">
-          </label>
-          <label>Priorität (1 = niedrig, 5 = hoch)
-            <input type="number" id="priority" min="1" max="5">
-          </label>
-          <button type="submit">Kurs anlegen</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card list-card">
-      <h2>Kurse</h2>
-      <table>
-        <thead>
-          <tr><th>Name</th><th>ECTS</th><th>Zeitaufwand</th><th>Priorität</th><th></th></tr>
-        </thead>
-        <tbody id="course-list"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- TASKS -->
-  <section id="tasks" class="tab-panel">
-    <div class="grid">
-      <div class="card">
-        <h2>Task anlegen</h2>
-        <form id="task-form">
-          <label>Typ
-            <select id="discriminator">
-              <option value="LearnSession">Lernsession (an Kurs gebunden)</option>
-              <option value="FixedTask">Fester Termin (Arbeit/Freizeit/Training/...)</option>
-            </select>
-          </label>
-
-          <label>Bezeichnung
-            <input type="text" id="taskName" required>
-          </label>
-          <label>Beschreibung
-            <input type="text" id="description">
-          </label>
-          <label>Ort
-            <input type="text" id="location">
-          </label>
-          <label>Status
-            <select id="status">
-              <option value="offen">offen</option>
-              <option value="in Bearbeitung">in Bearbeitung</option>
-              <option value="erledigt">erledigt</option>
-            </select>
-          </label>
-
-          <div id="learnsession-fields" class="conditional-fields">
-            <label>Zugehöriger Kurs
-              <select id="task-course"></select>
-            </label>
+      <!-- PROFIL & EINSTELLUNGEN -->
+      <section id="view-profil" class="view">
+        <h1 class="view-title" data-i18n="nav.profil">Profil &amp; Einstellungen</h1>
+        <div class="grid">
+          <div class="card">
+            <h2 data-i18n="profil.createTitle">Profil anlegen</h2>
+            <form id="user-form">
+              <label data-i18n="profil.name">Name
+                <input type="text" id="userName" required>
+              </label>
+              <label data-i18n="profil.fieldOfStudy">Studiengang
+                <input type="text" id="fieldOfStudy">
+              </label>
+              <label data-i18n="profil.employment">Arbeit
+                <input type="text" id="employment" data-i18n-placeholder="profil.employmentPlaceholder" placeholder="z. B. Werkstudent, 15h/Woche">
+              </label>
+              <label data-i18n="profil.livingSituation">Wohnsituation
+                <input type="text" id="livingSituation" data-i18n-placeholder="profil.livingSituationPlaceholder" placeholder="z. B. WG, allein">
+              </label>
+              <button type="submit" data-i18n="profil.createBtn">Profil anlegen</button>
+            </form>
           </div>
 
-          <div id="fixedtask-fields" class="conditional-fields hidden">
-            <label>Art
-              <select id="type">
-                <option value="Arbeit">Arbeit</option>
-                <option value="Freizeit">Freizeit</option>
-                <option value="Training">Training</option>
-                <option value="Sonstiges">Sonstiges</option>
-              </select>
+          <div class="card">
+            <h2 data-i18n="profil.selectTitle">Bestehendes Profil wählen</h2>
+            <label data-i18n="profil.selectLabel">Profil
+              <select id="user-select"></select>
             </label>
-            <label class="checkbox-label">
-              <input type="checkbox" id="recurring">
-              wiederkehrend
-            </label>
+            <button id="select-user-btn" type="button" data-i18n="profil.selectBtn">Als aktiv setzen</button>
+            <p class="hint" data-i18n="profil.selectHint">Alle weiteren Eingaben (Kurse, Aufgaben, Kalender) beziehen sich immer auf das aktive Profil.</p>
           </div>
 
-          <button type="submit">Task anlegen</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card list-card">
-      <h2>Tasks</h2>
-      <table>
-        <thead>
-          <tr><th>Name</th><th>Typ</th><th>Status</th><th>Ort</th><th></th></tr>
-        </thead>
-        <tbody id="task-list"></tbody>
-      </table>
-    </div>
-  </section>
-
-  <!-- KALENDER -->
-  <section id="kalender" class="tab-panel">
-    <div class="grid">
-      <div class="card">
-        <h2>Lernplan generieren</h2>
-        <p class="hint">Plant offene Lernzeit für alle Kurse des aktiven Profils in die freien Zeitfenster der nächsten Tage ein.</p>
-        <form id="generate-form">
-          <label>Zeitraum (Tage)
-            <input type="number" id="generate-days" value="14" min="1">
-          </label>
-          <button type="submit" id="generate-btn">Lernsessions einplanen</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>KI-Anpassung</h2>
-        <p class="hint">Bezieht sich immer auf den aktuell angezeigten Zeitraum (Woche/Monat). Kann Termine verschieben, neu anlegen oder löschen. In der Monatsansicht bitte einen konkreten Tag angeben (z. B. "Freitag" oder "jeden Dienstag").</p>
-        <form id="optimize-form">
-          <label>Was hat sich geändert oder was soll geplant werden?
-            <input type="text" id="change-description" placeholder="z. B. Schicht am Montag bis 20 Uhr verlängert / Plane Lernsessions für Datenbanken diese Woche" required>
-          </label>
-          <button type="submit">Lernplan anpassen lassen</button>
-        </form>
-      </div>
-    </div>
-
-    <div class="card list-card">
-      <div class="calendar-toolbar">
-        <div class="view-switch">
-          <button type="button" class="view-btn active" data-view="week">Woche</button>
-          <button type="button" class="view-btn" data-view="month">Monat</button>
+          <div class="card">
+            <h2 data-i18n="profil.prefsTitle">Einstellungen (UserPreferences)</h2>
+            <form id="preferences-form">
+              <label data-i18n="profil.preferredTimes">Bevorzugte Lernzeiten (ab)</label>
+              <div id="preferred-times-list" class="repeatable-list">
+                <div class="repeatable-row">
+                  <input type="time" class="preferredTime-input">
+                  <button type="button" class="secondary remove-time-btn" data-i18n="common.remove">Entfernen</button>
+                </div>
+              </div>
+              <button type="button" id="add-time-btn" class="secondary" data-i18n="profil.addTime">+ Uhrzeit hinzufügen</button>
+              <label data-i18n="profil.maxHoursPerDay">Max. Stunden pro Tag
+                <input type="number" id="maxHoursPerDay" step="0.5">
+              </label>
+              <label data-i18n="profil.breakDuration">Pausenlänge (Min.)
+                <input type="number" id="breakDuration">
+              </label>
+              <label data-i18n="profil.bufferBeforeExam">Puffer vor Prüfung (Tage)
+                <input type="number" id="bufferBeforeExam">
+              </label>
+              <button type="submit" data-i18n="profil.savePrefsBtn">Einstellungen speichern</button>
+            </form>
+          </div>
         </div>
-        <div class="cal-nav">
-          <button type="button" id="cal-prev">‹</button>
-          <span id="cal-label"></span>
-          <button type="button" id="cal-next">›</button>
-          <button type="button" id="cal-today" class="secondary">Heute</button>
-          <button type="button" id="undo-btn" class="secondary" title="Letzte Änderung rückgängig machen">↺ Rückgängig</button>
-        </div>
-        <button type="button" id="open-entry-modal-btn" class="add-fab" title="Kalendereintrag anlegen">+</button>
-      </div>
-      <div id="calendar-container"></div>
-    </div>
-  </section>
+      </section>
 
-</main>
+      <!-- KURSE -->
+      <section id="view-kurse" class="view">
+        <h1 class="view-title"><span class="cat-icon cat-kurse" aria-hidden="true">📘</span> <span data-i18n="nav.kurse">Kurse</span></h1>
+        <div class="grid">
+          <div class="card">
+            <h2 data-i18n="kurse.addTitle">Kurs hinzufügen</h2>
+            <form id="course-form">
+              <label data-i18n="kurse.name">Kursname
+                <input type="text" id="courseName" required>
+              </label>
+              <label data-i18n="kurse.workload">Zeitaufwand gesamt (Std.)
+                <input type="number" id="workload" step="0.5">
+              </label>
+              <label data-i18n="kurse.ects">ECTS
+                <input type="number" id="ects">
+              </label>
+              <label data-i18n="kurse.priority">Priorität (1 = niedrig, 5 = hoch)
+                <input type="number" id="priority" min="1" max="5">
+              </label>
+              <label data-i18n="kurse.examDates">Prüfungstermine</label>
+              <div id="exam-dates-list" class="repeatable-list">
+                <div class="repeatable-row">
+                  <input type="date" class="examDate-input">
+                  <button type="button" class="secondary remove-exam-date-btn" data-i18n="common.remove">Entfernen</button>
+                </div>
+              </div>
+              <button type="button" id="add-exam-date-btn" class="secondary" data-i18n="kurse.addExamDate">+ Prüfungstermin hinzufügen</button>
+              <label data-i18n="kurse.materialGoal">Kursmaterial-Ziel (z. B. "20 Folien/Woche")
+                <input type="text" id="materialGoal" data-i18n-placeholder="kurse.materialGoalPlaceholder" placeholder="z. B. 20 Folien/Woche">
+              </label>
+              <button type="submit" data-i18n="kurse.createBtn">Kurs anlegen</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2><span class="cat-icon cat-tasks" aria-hidden="true">✓</span> <span data-i18n="task.addTitle">Aufgabe / Termin anlegen</span></h2>
+            <form id="task-form">
+              <label data-i18n="task.type">Typ
+                <select id="discriminator">
+                  <option value="LearnSession" data-i18n="task.typeLearnSession">Lernsession (an Kurs gebunden)</option>
+                  <option value="FixedTask" data-i18n="task.typeFixedTask">Fester Termin (Arbeit/Freizeit/Training/...)</option>
+                </select>
+              </label>
+              <label data-i18n="task.name">Bezeichnung
+                <input type="text" id="taskName" required>
+              </label>
+              <label data-i18n="task.description">Beschreibung
+                <input type="text" id="description">
+              </label>
+              <label data-i18n="task.location">Ort
+                <input type="text" id="location">
+              </label>
+              <label data-i18n="task.status">Status
+                <select id="status">
+                  <option value="offen" data-i18n="task.statusOpen">offen</option>
+                  <option value="in Bearbeitung" data-i18n="task.statusInProgress">in Bearbeitung</option>
+                  <option value="erledigt" data-i18n="task.statusDone">erledigt</option>
+                </select>
+              </label>
+              <div id="learnsession-fields" class="conditional-fields">
+                <label data-i18n="task.course">Zugehöriger Kurs
+                  <select id="task-course"></select>
+                </label>
+              </div>
+              <div id="fixedtask-fields" class="conditional-fields hidden">
+                <label data-i18n="task.kind">Art
+                  <select id="type">
+                    <option value="Arbeit" data-i18n="task.kindWork">Arbeit</option>
+                    <option value="Freizeit" data-i18n="task.kindLeisure">Freizeit</option>
+                    <option value="Training" data-i18n="task.kindTraining">Training</option>
+                    <option value="Sonstiges" data-i18n="task.kindOther">Sonstiges</option>
+                  </select>
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="recurring">
+                  <span data-i18n="task.recurring">wiederkehrend (Routine ♻)</span>
+                </label>
+              </div>
+              <button type="submit" data-i18n="task.createBtn">Anlegen</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card list-card">
+          <h2 data-i18n="nav.kurse">Kurse</h2>
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="table.name">Name</th>
+                <th data-i18n="table.ects">ECTS</th>
+                <th data-i18n="table.workload">Zeitaufwand</th>
+                <th data-i18n="table.priority">Priorität</th>
+                <th data-i18n="table.exams">Prüfungen</th>
+                <th data-i18n="table.materialGoal">Material-Ziel</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="course-list"></tbody>
+          </table>
+        </div>
+
+        <div class="card list-card">
+          <h2 data-i18n="task.listTitle">Aufgaben &amp; Termine</h2>
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="table.name">Name</th>
+                <th data-i18n="table.type">Typ</th>
+                <th data-i18n="table.status">Status</th>
+                <th data-i18n="table.location">Ort</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="task-list"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- KALENDER -->
+      <section id="view-kalender" class="view">
+        <h1 class="view-title"><span class="cat-icon cat-termine" aria-hidden="true">📅</span> <span data-i18n="nav.kalender">Kalender</span></h1>
+        <div class="grid">
+          <div class="card">
+            <h2 data-i18n="calendar.generateTitle">Lernplan generieren</h2>
+            <p class="hint" data-i18n="calendar.generateHint">Plant offene Lernzeit für alle Kurse des aktiven Profils in die freien Zeitfenster der nächsten Tage ein.</p>
+            <form id="generate-form">
+              <label data-i18n="calendar.generateDays">Zeitraum (Tage)
+                <input type="number" id="generate-days" value="14" min="1">
+              </label>
+              <button type="submit" id="generate-btn" data-i18n="calendar.generateBtn">Lernsessions einplanen</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card list-card">
+          <div class="calendar-toolbar">
+            <div class="view-switch">
+              <button type="button" class="view-btn active" data-view="week" data-i18n="calendar.week">Woche</button>
+              <button type="button" class="view-btn" data-view="month" data-i18n="calendar.month">Monat</button>
+            </div>
+            <div class="cal-nav">
+              <button type="button" id="cal-prev" aria-label="zurück">‹</button>
+              <span id="cal-label"></span>
+              <button type="button" id="cal-next" aria-label="weiter">›</button>
+              <button type="button" id="cal-today" class="secondary" data-i18n="calendar.today">Heute</button>
+              <button type="button" id="undo-btn" class="secondary" data-i18n-title="calendar.undoTitle" title="Letzte Änderung rückgängig machen" data-i18n="calendar.undo">↺ Rückgängig</button>
+            </div>
+            <button type="button" id="open-entry-modal-btn" class="add-fab" data-i18n-title="calendar.addEntryTitle" title="Kalendereintrag anlegen">+</button>
+          </div>
+          <div class="legend">
+            <span><i class="legend-dot cat-kurse-bg"></i>📘 <span data-i18n="legend.learnSession">Lernsession</span></span>
+            <span><i class="legend-dot cat-routinen-bg"></i>♻ <span data-i18n="legend.routine">Routine</span></span>
+            <span><i class="legend-dot cat-termine-bg"></i>📅 <span data-i18n="legend.appointment">Termin</span></span>
+          </div>
+          <div id="calendar-container"></div>
+        </div>
+      </section>
+
+      <!-- KI-ASSISTENT -->
+      <section id="view-ki" class="view">
+        <h1 class="view-title"><span class="cat-icon cat-ki" aria-hidden="true">🤖</span> <span data-i18n="nav.ki">KI-Assistent</span></h1>
+        <div class="card chat-card">
+          <div id="chat-log" class="chat-log">
+            <div class="chat-msg assistant">
+              <span class="chat-avatar" aria-hidden="true">🤖</span>
+              <div class="chat-bubble" data-i18n="chat.welcome">Hallo! Beschreibe eine Änderung (z. B. "Schicht am Montag bis 20 Uhr verlängert"), bitte um neue Lernsessions, oder lass mich einen Termin umbenennen bzw. löschen. Ich beziehe mich dabei immer auf den aktuell im Kalender angezeigten Zeitraum – in der Monatsansicht bitte einen konkreten Tag nennen.</div>
+            </div>
+          </div>
+          <form id="optimize-form" class="chat-input-row">
+            <label class="visually-hidden" for="change-description" data-i18n="chat.inputLabel">Nachricht an den KI-Assistenten</label>
+            <input type="text" id="change-description" data-i18n-placeholder="chat.inputPlaceholder" placeholder="Nachricht eingeben…" required>
+            <button type="submit" data-i18n="chat.send">Senden</button>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
 
 <!-- POPUP: Kalendereintrag anlegen -->
 <div id="entry-modal" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-header">
-      <h2>Kalendereintrag anlegen</h2>
-      <button type="button" id="close-entry-modal" class="modal-close" aria-label="Schließen">&times;</button>
+      <h2 data-i18n="entryModal.createTitle">Kalendereintrag anlegen</h2>
+      <button type="button" id="close-entry-modal" class="modal-close" data-i18n-aria-label="common.close" aria-label="Schließen">&times;</button>
     </div>
     <form id="entry-form">
-      <label>Task
+      <label data-i18n="entryModal.task">Task
         <select id="entry-task"></select>
       </label>
-      <label>Start
+      <label data-i18n="entryModal.start">Start
         <input type="datetime-local" id="startDateTime" required>
       </label>
-      <label>Ende
+      <label data-i18n="entryModal.end">Ende
         <input type="datetime-local" id="endDateTime" required>
       </label>
-      <label>Erinnerung
-        <input type="text" id="reminder" placeholder="z. B. 30 Min. vorher">
+      <label data-i18n="entryModal.reminder">Erinnerung
+        <input type="text" id="reminder" data-i18n-placeholder="entryModal.reminderPlaceholder" placeholder="z. B. 30 Min. vorher">
       </label>
-      <button type="submit">Eintrag anlegen</button>
+      <button type="submit" data-i18n="entryModal.createBtn">Eintrag anlegen</button>
     </form>
   </div>
 </div>
@@ -256,26 +334,26 @@
 <div id="edit-entry-modal" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-header">
-      <h2>Kalendereintrag bearbeiten</h2>
-      <button type="button" id="close-edit-modal" class="modal-close" aria-label="Schließen">&times;</button>
+      <h2 data-i18n="entryModal.editTitle">Kalendereintrag bearbeiten</h2>
+      <button type="button" id="close-edit-modal" class="modal-close" data-i18n-aria-label="common.close" aria-label="Schließen">&times;</button>
     </div>
     <form id="edit-entry-form">
-      <label>Bezeichnung
+      <label data-i18n="entryModal.name">Bezeichnung
         <input type="text" id="edit-taskName" required>
       </label>
       <p id="edit-entry-task-name" class="hint"></p>
-      <label>Start
+      <label data-i18n="entryModal.start">Start
         <input type="datetime-local" id="edit-startDateTime" required>
       </label>
-      <label>Ende
+      <label data-i18n="entryModal.end">Ende
         <input type="datetime-local" id="edit-endDateTime" required>
       </label>
-      <label>Erinnerung
+      <label data-i18n="entryModal.reminder">Erinnerung
         <input type="text" id="edit-reminder">
       </label>
       <div class="modal-actions">
-        <button type="submit">Speichern</button>
-        <button type="button" id="delete-entry-btn" class="secondary">Löschen</button>
+        <button type="submit" data-i18n="common.save">Speichern</button>
+        <button type="button" id="delete-entry-btn" class="secondary" data-i18n="common.delete">Löschen</button>
       </div>
     </form>
   </div>

@@ -35,7 +35,9 @@ CREATE TABLE IF NOT EXISTS course (
   courseName TEXT NOT NULL,
   workload REAL,
   ects INTEGER,
-  priority INTEGER
+  priority INTEGER,
+  examDates TEXT,
+  materialGoal TEXT
 );
 
 CREATE TABLE IF NOT EXISTS task (

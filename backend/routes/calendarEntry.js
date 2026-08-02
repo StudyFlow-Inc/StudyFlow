@@ -3,6 +3,29 @@ const router = express.Router();
 const db = require('../db');
 const { toLocalISOString } = require('../scheduler');
 
+const OVERLAP_MESSAGE = '⚠ Kalenderüberschneidung erkannt';
+
+/**
+ * Prüft, ob [startDateTime, endDateTime) sich mit einem bestehenden Termin
+ * desselben Users überschneidet. excludeEntryID wird beim Bearbeiten
+ * übergeben, damit der Eintrag nicht mit sich selbst verglichen wird.
+ */
+function hasOverlap(userID, startDateTime, endDateTime, excludeEntryID = null) {
+  const rows = db.prepare(
+    `SELECT entryID, startDateTime, endDateTime FROM calendar_entry
+     WHERE userID = ? ${excludeEntryID ? 'AND entryID != ?' : ''}`
+  ).all(...(excludeEntryID ? [userID, excludeEntryID] : [userID]));
+
+  const newStart = new Date(startDateTime);
+  const newEnd = new Date(endDateTime);
+
+  return rows.some((r) => {
+    const start = new Date(r.startDateTime);
+    const end = new Date(r.endDateTime);
+    return newStart < end && newEnd > start;
+  });
+}
+
 // alle CalendarEntries eines Users
 router.get('/user/:userID', (req, res) => {
   res.json(
@@ -14,6 +37,11 @@ router.get('/user/:userID', (req, res) => {
 // Aktualisieren des Lernplans nie automatisch gelöscht/überschrieben
 router.post('/', (req, res) => {
   const { userID, taskID, startDateTime, endDateTime, reminder } = req.body;
+
+  if (hasOverlap(userID, startDateTime, endDateTime)) {
+    return res.status(409).json({ error: OVERLAP_MESSAGE });
+  }
+
   const info = db.prepare(`
     INSERT INTO calendar_entry (userID, taskID, startDateTime, endDateTime, reminder, isManual)
     VALUES (?, ?, ?, ?, ?, 1)
@@ -28,6 +56,10 @@ router.put('/:id', (req, res) => {
   const { startDateTime, endDateTime, reminder } = req.body;
   const old = db.prepare('SELECT * FROM calendar_entry WHERE entryID = ?').get(req.params.id);
   if (!old) return res.status(404).json({ error: 'nicht gefunden' });
+
+  if (hasOverlap(old.userID, startDateTime, endDateTime, Number(req.params.id))) {
+    return res.status(409).json({ error: OVERLAP_MESSAGE });
+  }
 
   db.prepare(`
     UPDATE calendar_entry
@@ -57,6 +89,10 @@ router.put('/:id/reschedule', (req, res) => {
   const { startDateTime, endDateTime, reason } = req.body;
   const old = db.prepare('SELECT * FROM calendar_entry WHERE entryID = ?').get(req.params.id);
   if (!old) return res.status(404).json({ error: 'nicht gefunden' });
+
+  if (hasOverlap(old.userID, startDateTime, endDateTime, Number(req.params.id))) {
+    return res.status(409).json({ error: OVERLAP_MESSAGE });
+  }
 
   db.prepare(`
     UPDATE calendar_entry

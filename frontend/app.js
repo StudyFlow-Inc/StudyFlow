@@ -1,8 +1,206 @@
 const API_BASE = 'http://localhost:3000/api';
 
+// ---------- i18n (Deutsch/Englisch) ----------
+
+const TRANSLATIONS = {
+  'nav.dashboard': { de: 'Dashboard', en: 'Dashboard' },
+  'nav.kalender': { de: 'Kalender', en: 'Calendar' },
+  'nav.kurse': { de: 'Kurse', en: 'Courses' },
+  'nav.ki': { de: 'KI-Assistent', en: 'AI Assistant' },
+  'nav.profil': { de: 'Profil & Einstellungen', en: 'Profile & Settings' },
+  'quicklink.profil': { de: 'Profil', en: 'Profile' },
+
+  'topbar.menuOpen': { de: 'Menü öffnen', en: 'Open menu' },
+  'topbar.search': { de: 'Suche', en: 'Search' },
+  'topbar.searchPlaceholder': { de: 'Kurse, Termine, Aufgaben durchsuchen…', en: 'Search courses, appointments, tasks…' },
+  'topbar.noProfile': { de: 'Kein Profil aktiv', en: 'No profile active' },
+  'topbar.active': { de: 'Aktiv:', en: 'Active:' },
+  'topbar.langToggle': { de: 'Sprache wechseln', en: 'Switch language' },
+  'topbar.themeToggle': { de: 'Theme wechseln', en: 'Switch theme' },
+
+  'dashboard.title': { de: 'Dashboard', en: 'Dashboard' },
+  'dashboard.today': { de: 'Heutige Termine', en: "Today's Appointments" },
+  'dashboard.openTasks': { de: 'Offene Aufgaben', en: 'Open Tasks' },
+  'dashboard.quickAccess': { de: 'Schnellzugriff', en: 'Quick Access' },
+  'dashboard.noProfile': { de: 'Kein Profil aktiv.', en: 'No profile active.' },
+  'dashboard.noAppointmentsToday': { de: 'Heute keine Termine.', en: 'No appointments today.' },
+  'dashboard.noOpenTasks': { de: 'Keine offenen Aufgaben.', en: 'No open tasks.' },
+
+  'profil.createTitle': { de: 'Profil anlegen', en: 'Create profile' },
+  'profil.name': { de: 'Name', en: 'Name' },
+  'profil.fieldOfStudy': { de: 'Studiengang', en: 'Field of study' },
+  'profil.employment': { de: 'Arbeit', en: 'Employment' },
+  'profil.employmentPlaceholder': { de: 'z. B. Werkstudent, 15h/Woche', en: 'e.g. working student, 15h/week' },
+  'profil.livingSituation': { de: 'Wohnsituation', en: 'Living situation' },
+  'profil.livingSituationPlaceholder': { de: 'z. B. WG, allein', en: 'e.g. shared flat, alone' },
+  'profil.createBtn': { de: 'Profil anlegen', en: 'Create profile' },
+  'profil.selectTitle': { de: 'Bestehendes Profil wählen', en: 'Select existing profile' },
+  'profil.selectLabel': { de: 'Profil', en: 'Profile' },
+  'profil.selectBtn': { de: 'Als aktiv setzen', en: 'Set as active' },
+  'profil.selectHint': { de: 'Alle weiteren Eingaben (Kurse, Aufgaben, Kalender) beziehen sich immer auf das aktive Profil.', en: 'All further entries (courses, tasks, calendar) always relate to the active profile.' },
+  'profil.prefsTitle': { de: 'Einstellungen (UserPreferences)', en: 'Settings (UserPreferences)' },
+  'profil.preferredTimes': { de: 'Bevorzugte Lernzeiten (ab)', en: 'Preferred study times (from)' },
+  'profil.addTime': { de: '+ Uhrzeit hinzufügen', en: '+ Add time' },
+  'profil.maxHoursPerDay': { de: 'Max. Stunden pro Tag', en: 'Max. hours per day' },
+  'profil.breakDuration': { de: 'Pausenlänge (Min.)', en: 'Break length (min.)' },
+  'profil.bufferBeforeExam': { de: 'Puffer vor Prüfung (Tage)', en: 'Buffer before exam (days)' },
+  'profil.savePrefsBtn': { de: 'Einstellungen speichern', en: 'Save settings' },
+
+  'kurse.addTitle': { de: 'Kurs hinzufügen', en: 'Add course' },
+  'kurse.name': { de: 'Kursname', en: 'Course name' },
+  'kurse.workload': { de: 'Zeitaufwand gesamt (Std.)', en: 'Total workload (hrs)' },
+  'kurse.ects': { de: 'ECTS', en: 'ECTS' },
+  'kurse.priority': { de: 'Priorität (1 = niedrig, 5 = hoch)', en: 'Priority (1 = low, 5 = high)' },
+  'kurse.examDates': { de: 'Prüfungstermine', en: 'Exam dates' },
+  'kurse.addExamDate': { de: '+ Prüfungstermin hinzufügen', en: '+ Add exam date' },
+  'kurse.materialGoal': { de: 'Kursmaterial-Ziel (z. B. "20 Folien/Woche")', en: 'Course material goal (e.g. "20 slides/week")' },
+  'kurse.materialGoalPlaceholder': { de: 'z. B. 20 Folien/Woche', en: 'e.g. 20 slides/week' },
+  'kurse.createBtn': { de: 'Kurs anlegen', en: 'Create course' },
+
+  'task.addTitle': { de: 'Aufgabe / Termin anlegen', en: 'Create task / appointment' },
+  'task.listTitle': { de: 'Aufgaben & Termine', en: 'Tasks & Appointments' },
+  'task.type': { de: 'Typ', en: 'Type' },
+  'task.typeLearnSession': { de: 'Lernsession (an Kurs gebunden)', en: 'Learn session (tied to a course)' },
+  'task.typeFixedTask': { de: 'Fester Termin (Arbeit/Freizeit/Training/...)', en: 'Fixed appointment (work/leisure/training/...)' },
+  'task.name': { de: 'Bezeichnung', en: 'Name' },
+  'task.description': { de: 'Beschreibung', en: 'Description' },
+  'task.location': { de: 'Ort', en: 'Location' },
+  'task.status': { de: 'Status', en: 'Status' },
+  'task.statusOpen': { de: 'offen', en: 'open' },
+  'task.statusInProgress': { de: 'in Bearbeitung', en: 'in progress' },
+  'task.statusDone': { de: 'erledigt', en: 'done' },
+  'task.course': { de: 'Zugehöriger Kurs', en: 'Associated course' },
+  'task.kind': { de: 'Art', en: 'Kind' },
+  'task.kindWork': { de: 'Arbeit', en: 'Work' },
+  'task.kindLeisure': { de: 'Freizeit', en: 'Leisure' },
+  'task.kindTraining': { de: 'Training', en: 'Training' },
+  'task.kindOther': { de: 'Sonstiges', en: 'Other' },
+  'task.recurring': { de: 'wiederkehrend (Routine ♻)', en: 'recurring (routine ♻)' },
+  'task.createBtn': { de: 'Anlegen', en: 'Create' },
+
+  'table.name': { de: 'Name', en: 'Name' },
+  'table.ects': { de: 'ECTS', en: 'ECTS' },
+  'table.workload': { de: 'Zeitaufwand', en: 'Workload' },
+  'table.priority': { de: 'Priorität', en: 'Priority' },
+  'table.exams': { de: 'Prüfungen', en: 'Exams' },
+  'table.materialGoal': { de: 'Material-Ziel', en: 'Material goal' },
+  'table.type': { de: 'Typ', en: 'Type' },
+  'table.status': { de: 'Status', en: 'Status' },
+  'table.location': { de: 'Ort', en: 'Location' },
+
+  'calendar.generateTitle': { de: 'Lernplan generieren', en: 'Generate study plan' },
+  'calendar.generateHint': { de: 'Plant offene Lernzeit für alle Kurse des aktiven Profils in die freien Zeitfenster der nächsten Tage ein.', en: 'Schedules open study time for all courses of the active profile into free slots over the coming days.' },
+  'calendar.generateDays': { de: 'Zeitraum (Tage)', en: 'Period (days)' },
+  'calendar.generateBtn': { de: 'Lernsessions einplanen', en: 'Schedule learn sessions' },
+  'calendar.generateBtnUpdate': { de: 'Lernsessions aktualisieren', en: 'Update learn sessions' },
+  'calendar.week': { de: 'Woche', en: 'Week' },
+  'calendar.month': { de: 'Monat', en: 'Month' },
+  'calendar.today': { de: 'Heute', en: 'Today' },
+  'calendar.undo': { de: '↺ Rückgängig', en: '↺ Undo' },
+  'calendar.undoTitle': { de: 'Letzte Änderung rückgängig machen', en: 'Undo last change' },
+  'calendar.addEntryTitle': { de: 'Kalendereintrag anlegen', en: 'Create calendar entry' },
+
+  'legend.learnSession': { de: 'Lernsession', en: 'Learn session' },
+  'legend.routine': { de: 'Routine', en: 'Routine' },
+  'legend.appointment': { de: 'Termin', en: 'Appointment' },
+
+  'chat.welcome': { de: 'Hallo! Beschreibe eine Änderung (z. B. "Schicht am Montag bis 20 Uhr verlängert"), bitte um neue Lernsessions, oder lass mich einen Termin umbenennen bzw. löschen. Ich beziehe mich dabei immer auf den aktuell im Kalender angezeigten Zeitraum – in der Monatsansicht bitte einen konkreten Tag nennen.', en: "Hi! Describe a change (e.g. \"Monday's shift was extended to 8pm\"), ask me to schedule new learn sessions, or have me rename or delete an appointment. I always work within the period currently shown in the calendar - in month view, please name a specific day." },
+  'chat.inputLabel': { de: 'Nachricht an den KI-Assistenten', en: 'Message to the AI assistant' },
+  'chat.inputPlaceholder': { de: 'Nachricht eingeben…', en: 'Type a message…' },
+  'chat.send': { de: 'Senden', en: 'Send' },
+  'chat.thinking': { de: '… überlege …', en: '… thinking …' },
+  'chat.monthNeedsDay': { de: 'Bitte in der Monatsansicht einen konkreten Tag angeben (z. B. "Freitag" oder "jeden Dienstag").', en: 'Please name a specific day in month view (e.g. "Friday" or "every Tuesday").' },
+  'chat.noChangeNeeded': { de: 'Keine Anpassung nötig.', en: 'No adjustment needed.' },
+  'chat.suggestionsIntro': { de: 'Folgende Änderungen werden vorgeschlagen:', en: 'The following changes are suggested:' },
+  'chat.apply': { de: 'Übernehmen', en: 'Apply' },
+  'chat.discard': { de: 'Verwerfen', en: 'Discard' },
+  'chat.discarded': { de: 'Alles klar, ich habe nichts geändert.', en: "Got it, I haven't changed anything." },
+  'chat.applied': { de: 'Übernommen.', en: 'Applied.' },
+  'chat.error': { de: 'Fehler: ', en: 'Error: ' },
+  'chat.new': { de: 'NEU', en: 'NEW' },
+  'chat.delete': { de: 'LÖSCHEN', en: 'DELETE' },
+  'chat.rename': { de: 'UMBENENNEN', en: 'RENAME' },
+
+  'entryModal.createTitle': { de: 'Kalendereintrag anlegen', en: 'Create calendar entry' },
+  'entryModal.editTitle': { de: 'Kalendereintrag bearbeiten', en: 'Edit calendar entry' },
+  'entryModal.task': { de: 'Task', en: 'Task' },
+  'entryModal.name': { de: 'Bezeichnung', en: 'Name' },
+  'entryModal.start': { de: 'Start', en: 'Start' },
+  'entryModal.end': { de: 'Ende', en: 'End' },
+  'entryModal.reminder': { de: 'Erinnerung', en: 'Reminder' },
+  'entryModal.reminderPlaceholder': { de: 'z. B. 30 Min. vorher', en: 'e.g. 30 min. before' },
+  'entryModal.createBtn': { de: 'Eintrag anlegen', en: 'Create entry' },
+
+  'common.remove': { de: 'Entfernen', en: 'Remove' },
+  'common.save': { de: 'Speichern', en: 'Save' },
+  'common.delete': { de: 'Löschen', en: 'Delete' },
+  'common.close': { de: 'Schließen', en: 'Close' },
+};
+
+let currentLang = localStorage.getItem('lang') || 'de';
+
+function t(key) {
+  const entry = TRANSLATIONS[key];
+  if (!entry) return null;
+  return entry[currentLang] ?? entry.de;
+}
+
+function localeTag() {
+  return currentLang === 'en' ? 'en-US' : 'de-DE';
+}
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('lang', lang);
+  document.documentElement.lang = lang;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const text = t(el.dataset.i18n);
+    if (text == null) return;
+    const textNode = Array.from(el.childNodes).find(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim() !== '');
+    if (textNode) {
+      textNode.textContent = text;
+    } else if (el.childNodes.length === 0) {
+      el.textContent = text;
+    }
+  });
+
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const text = t(el.dataset.i18nPlaceholder);
+    if (text != null) el.setAttribute('placeholder', text);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const text = t(el.dataset.i18nTitle);
+    if (text != null) el.setAttribute('title', text);
+  });
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+    const text = t(el.dataset.i18nAriaLabel);
+    if (text != null) el.setAttribute('aria-label', text);
+  });
+
+  document.getElementById('lang-toggle').textContent = lang === 'de' ? 'DE' : 'EN';
+
+  // dynamisch gerenderte Inhalte neu zeichnen, damit auch sie die Sprache wechseln
+  // (defensiv mit try/catch, falls applyLanguage vor der Initialisierung
+  // anderer Variablen aufgerufen wird)
+  try {
+    if (typeof renderCalendar === 'function') renderCalendar();
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (typeof updateGenerateButtonLabel === 'function') updateGenerateButtonLabel();
+    if (typeof setActiveUserDisplay === 'function') setActiveUserDisplay(lastKnownUser);
+  } catch (err) {
+    console.warn('applyLanguage: dynamische Inhalte konnten noch nicht neu gezeichnet werden', err);
+  }
+}
+
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  applyLanguage(currentLang === 'de' ? 'en' : 'de');
+});
+
 let currentUserID = localStorage.getItem('currentUserID')
   ? Number(localStorage.getItem('currentUserID'))
   : null;
+let lastKnownUser = null;
 
 // ---------- Helpers ----------
 
@@ -21,6 +219,15 @@ async function api(path, options = {}) {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && parsed.error) throw new Error(parsed.error);
+    } catch (parseErr) {
+      if (parseErr instanceof SyntaxError) {
+        throw new Error(`${res.status} ${res.statusText} ${text}`);
+      }
+      throw parseErr;
+    }
     throw new Error(`${res.status} ${res.statusText} ${text}`);
   }
   const contentType = res.headers.get('content-type') || '';
@@ -29,11 +236,12 @@ async function api(path, options = {}) {
 
 function setActiveUserDisplay(user) {
   const el = document.getElementById('active-user');
+  lastKnownUser = user || null;
   if (user) {
-    el.textContent = `Aktiv: ${user.userName} (ID ${user.userID})`;
+    el.textContent = `${t('topbar.active')} ${user.userName} (ID ${user.userID})`;
     el.classList.remove('empty');
   } else {
-    el.textContent = 'Kein Profil aktiv';
+    el.textContent = t('topbar.noProfile');
     el.classList.add('empty');
   }
 }
@@ -46,16 +254,42 @@ function requireActiveUser() {
   return true;
 }
 
-// ---------- Tabs ----------
+// ---------- Navigation (Sidebar-Views) ----------
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-  });
+function switchView(viewName) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === viewName));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById(`view-${viewName}`);
+  if (target) target.classList.add('active');
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
 });
+
+document.querySelectorAll('.quick-link').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+
+document.getElementById('hamburger-btn').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+// ---------- Theme (Light/Dark) ----------
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('theme-toggle').textContent = theme === 'dark' ? '☀️' : '🌙';
+  localStorage.setItem('theme', theme);
+}
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
+
+applyTheme(localStorage.getItem('theme') || 'light');
 
 // ---------- User / Profil ----------
 
@@ -197,6 +431,58 @@ document.getElementById('preferences-form').addEventListener('submit', async (e)
 
 // ---------- Kurse ----------
 
+// ---------- Prüfungstermine (mehrere Daten pro Kurs) ----------
+
+function addExamDateRow(value = '') {
+  const list = document.getElementById('exam-dates-list');
+  const row = document.createElement('div');
+  row.className = 'repeatable-row';
+  row.innerHTML = `
+    <input type="date" class="examDate-input" value="${value}">
+    <button type="button" class="secondary remove-exam-date-btn">Entfernen</button>
+  `;
+  row.querySelector('.remove-exam-date-btn').addEventListener('click', () => {
+    if (document.querySelectorAll('.examDate-input').length > 1) {
+      row.remove();
+    } else {
+      row.querySelector('input').value = '';
+    }
+  });
+  list.appendChild(row);
+}
+
+document.querySelectorAll('.remove-exam-date-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const row = e.target.closest('.repeatable-row');
+    if (document.querySelectorAll('.examDate-input').length > 1) {
+      row.remove();
+    } else {
+      row.querySelector('input').value = '';
+    }
+  });
+});
+
+document.getElementById('add-exam-date-btn').addEventListener('click', () => addExamDateRow());
+
+function getExamDatesFromForm() {
+  return Array.from(document.querySelectorAll('.examDate-input'))
+    .map(input => input.value)
+    .filter(Boolean);
+}
+
+function resetExamDatesInForm() {
+  const list = document.getElementById('exam-dates-list');
+  list.innerHTML = `
+    <div class="repeatable-row">
+      <input type="date" class="examDate-input">
+      <button type="button" class="secondary remove-exam-date-btn">Entfernen</button>
+    </div>
+  `;
+  list.querySelector('.remove-exam-date-btn').addEventListener('click', () => {
+    list.querySelector('input').value = '';
+  });
+}
+
 document.getElementById('course-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
@@ -207,18 +493,24 @@ document.getElementById('course-form').addEventListener('submit', async (e) => {
       workload: Number(document.getElementById('workload').value) || 0,
       ects: Number(document.getElementById('ects').value) || 0,
       priority: Number(document.getElementById('priority').value) || 0,
+      examDates: getExamDatesFromForm(),
+      materialGoal: document.getElementById('materialGoal').value,
     };
     await api('/courses', { method: 'POST', body: JSON.stringify(body) });
     showToast('Kurs angelegt.');
     e.target.reset();
+    resetExamDatesInForm();
     await loadCourses();
   } catch (err) {
     showToast('Fehler: ' + err.message, true);
   }
 });
 
+let allCoursesCache = [];
+
 async function loadCourses() {
   const courses = currentUserID ? (await api('/courses')).filter(c => c.userID === currentUserID) : [];
+  allCoursesCache = courses;
 
   const tbody = document.getElementById('course-list');
   tbody.innerHTML = courses.map(c => `
@@ -227,9 +519,11 @@ async function loadCourses() {
       <td>${c.ects ?? ''}</td>
       <td>${c.workload ?? ''} Std.</td>
       <td>${c.priority ?? ''}</td>
+      <td>${(c.examDates || []).map(d => new Date(d).toLocaleDateString(localeTag())).join(', ') || '–'}</td>
+      <td>${c.materialGoal || '–'}</td>
       <td><button class="secondary" data-delete-course="${c.courseID}">Löschen</button></td>
     </tr>
-  `).join('') || '<tr><td colspan="5" class="hint">Noch keine Kurse.</td></tr>';
+  `).join('') || '<tr><td colspan="7" class="hint">Noch keine Kurse.</td></tr>';
 
   const taskCourseSelect = document.getElementById('task-course');
   taskCourseSelect.innerHTML = courses
@@ -397,36 +691,61 @@ document.getElementById('generate-form').addEventListener('submit', async (e) =>
 
 function formatCandidateLine(c) {
   if (c.action === 'create') {
-    const start = new Date(c.newStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    const end = new Date(c.newEnd).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const start = new Date(c.newStart).toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const end = new Date(c.newEnd).toLocaleString(localeTag(), { hour: '2-digit', minute: '2-digit' });
     const label = c.entryType === 'FixedTask' ? `${c.taskName} (${c.appointmentType})` : c.courseName;
-    return `• NEU: ${label}: ${start} – ${end}`;
+    return `• ${t('chat.new')}: ${label}: ${start} – ${end}`;
   }
   if (c.action === 'delete') {
-    const start = new Date(c.oldStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    const end = new Date(c.oldEnd).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    return `• LÖSCHEN: ${c.taskName || 'Task ' + c.entryID} (${c.type}): ${start} – ${end}`;
+    const start = new Date(c.oldStart).toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const end = new Date(c.oldEnd).toLocaleString(localeTag(), { hour: '2-digit', minute: '2-digit' });
+    return `• ${t('chat.delete')}: ${c.taskName || 'Task ' + c.entryID} (${c.type}): ${start} – ${end}`;
   }
   if (c.action === 'rename') {
-    return `• UMBENENNEN: "${c.oldName}" → "${c.newName}"`;
+    return `• ${t('chat.rename')}: "${c.oldName}" → "${c.newName}"`;
   }
-  const oldTime = new Date(c.oldStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-  const newTime = new Date(c.newStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const oldTime = new Date(c.oldStart).toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const newTime = new Date(c.newStart).toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   return `• ${c.taskName || 'Task ' + c.entryID} (${c.type}): ${oldTime} → ${newTime}`;
 }
 
 const WEEKDAY_PATTERN = /montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|\bmo\.?|\bdi\.?|\bmi\.?|\bdo\.?|\bfr\.?|\bsa\.?|\bso\.?|\d{1,2}\.\d{1,2}\.?|\d{1,2}\.\s*(januar|februar|märz|april|mai|juni|juli|august|september|oktober|november|dezember)/i;
 
+const chatLog = document.getElementById('chat-log');
+let pendingClarificationContext = null;
+
+function appendChatMessage(role, contentHTML) {
+  const msg = document.createElement('div');
+  msg.className = `chat-msg ${role}`;
+  msg.innerHTML = `
+    <span class="chat-avatar" aria-hidden="true">${role === 'user' ? '🙂' : '🤖'}</span>
+    <div class="chat-bubble">${contentHTML}</div>
+  `;
+  chatLog.appendChild(msg);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return msg;
+}
+
 document.getElementById('optimize-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
 
-  const changeDescription = document.getElementById('change-description').value;
+  const typedText = document.getElementById('change-description').value;
+  appendChatMessage('user', typedText.replace(/</g, '&lt;'));
+  e.target.reset();
+
+  // Falls die KI zuvor eine Rückfrage gestellt hat, wird diese Antwort mit
+  // der ursprünglichen Anfrage kombiniert, statt isoliert als neue,
+  // kontextlose Anfrage geschickt zu werden.
+  const changeDescription = pendingClarificationContext
+    ? `Ursprüngliche Anfrage: "${pendingClarificationContext}". Antwort auf Rückfrage: "${typedText}"`
+    : typedText;
+  pendingClarificationContext = null;
 
   // Bei Monatsansicht muss der Prompt einen konkreten Tag/Wochentag nennen,
   // sonst wäre der Bezug zu unscharf ("diese Woche" ergibt in der Monatsansicht keinen Sinn)
   if (calendarView === 'month' && !WEEKDAY_PATTERN.test(changeDescription)) {
-    showToast('Bitte in der Monatsansicht einen konkreten Tag angeben (z. B. "Freitag" oder "jeden Dienstag").', true);
+    appendChatMessage('assistant', t('chat.monthNeedsDay'));
     return;
   }
 
@@ -441,6 +760,8 @@ document.getElementById('optimize-form').addEventListener('submit', async (e) =>
     rangeEnd = new Date(calendarAnchor.getFullYear(), calendarAnchor.getMonth() + 1, 1);
   }
 
+  const thinkingMsg = appendChatMessage('assistant', `<em>${t('chat.thinking')}</em>`);
+
   try {
     const preview = await api('/schedule/optimize', {
       method: 'POST',
@@ -452,35 +773,52 @@ document.getElementById('optimize-form').addEventListener('submit', async (e) =>
       }),
     });
 
+    thinkingMsg.remove();
+
+    if (preview.needsClarification) {
+      pendingClarificationContext = changeDescription;
+      appendChatMessage('assistant', preview.question);
+      return;
+    }
+
     if (!preview.candidates || preview.candidates.length === 0) {
-      showToast(preview.message || 'Keine Anpassung nötig.');
-      e.target.reset();
+      appendChatMessage('assistant', preview.message || t('chat.noChangeNeeded'));
       return;
     }
 
-    const confirmed = confirm(
-      `Folgende Änderungen werden vorgeschlagen:\n\n` +
-      preview.candidates.map(formatCandidateLine).join('\n') +
-      `\n\nÜbernehmen?`
+    const listHTML = '<ul>' + preview.candidates.map(c => `<li>${formatCandidateLine(c).replace(/^•\s*/, '')}</li>`).join('') + '</ul>';
+    const bubble = appendChatMessage('assistant',
+      `${preview.message || t('chat.suggestionsIntro')}${listHTML}
+       <div class="chat-actions">
+         <button type="button" class="apply-btn">${t('chat.apply')}</button>
+         <button type="button" class="secondary discard-btn">${t('chat.discard')}</button>
+       </div>`
     );
-    if (!confirmed) {
-      showToast('Änderungen verworfen.');
-      return;
-    }
 
-    const result = await api('/schedule/optimize/apply', {
-      method: 'POST',
-      body: JSON.stringify({ userID: currentUserID, changeDescription, candidates: preview.candidates }),
+    bubble.querySelector('.apply-btn').addEventListener('click', async () => {
+      bubble.querySelector('.chat-actions').remove();
+      try {
+        const result = await api('/schedule/optimize/apply', {
+          method: 'POST',
+          body: JSON.stringify({ userID: currentUserID, changeDescription, candidates: preview.candidates }),
+        });
+        appendChatMessage('assistant', result.message || t('chat.applied'));
+        if (result.rejected && result.rejected.length > 0) {
+          console.warn('Beim Übernehmen abgelehnte Änderungen:', result.rejected);
+        }
+        await loadEntries();
+      } catch (err) {
+        appendChatMessage('assistant', t('chat.error') + err.message);
+      }
     });
 
-    showToast(result.message || 'Lernplan angepasst.');
-    if (result.rejected && result.rejected.length > 0) {
-      console.warn('Beim Übernehmen abgelehnte Änderungen:', result.rejected);
-    }
-    e.target.reset();
-    await loadEntries();
+    bubble.querySelector('.discard-btn').addEventListener('click', () => {
+      bubble.querySelector('.chat-actions').remove();
+      appendChatMessage('assistant', t('chat.discarded'));
+    });
   } catch (err) {
-    showToast('Fehler: ' + err.message, true);
+    thinkingMsg.remove();
+    appendChatMessage('assistant', t('chat.error') + err.message);
   }
 });
 
@@ -506,7 +844,11 @@ const HOUR_START = 6;
 const HOUR_END = 23;
 const SLOT_MINUTES = 30;
 const SLOTS_PER_DAY = ((HOUR_END - HOUR_START) * 60) / SLOT_MINUTES;
-const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+function getWeekdayLabels() {
+  return currentLang === 'en'
+    ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    : ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+}
 
 let calendarView = 'week';
 let calendarAnchor = new Date();
@@ -557,9 +899,9 @@ function isSameDay(a, b) {
 
 function eventClassFor(task) {
   if (!task) return 'event-sonstiges';
-  if (task.discriminator === 'LearnSession') return 'event-learn';
-  const map = { Arbeit: 'event-arbeit', Freizeit: 'event-freizeit', Training: 'event-training' };
-  return map[task.type] || 'event-sonstiges';
+  if (task.discriminator === 'LearnSession') return 'event-kurse';
+  if (task.recurring === 1) return 'event-routine';
+  return 'event-termin';
 }
 
 async function loadEntries() {
@@ -568,14 +910,100 @@ async function loadEntries() {
   taskInfoById = Object.fromEntries(tasks.map(t => [t.taskID, t]));
   updateGenerateButtonLabel();
   renderCalendar();
+  renderDashboard();
 }
 
 function updateGenerateButtonLabel() {
   const hasLearnSessions = allEntries.some(en => taskInfoById[en.taskID]?.discriminator === 'LearnSession');
   document.getElementById('generate-btn').textContent = hasLearnSessions
-    ? 'Lernsessions aktualisieren'
-    : 'Lernsessions einplanen';
+    ? t('calendar.generateBtnUpdate')
+    : t('calendar.generateBtn');
 }
+
+// ---------- Dashboard ----------
+
+function renderDashboard() {
+  const todayList = document.getElementById('dashboard-today');
+  const openList = document.getElementById('dashboard-open-tasks');
+
+  if (!currentUserID) {
+    todayList.innerHTML = `<li class="hint">${t('dashboard.noProfile')}</li>`;
+    openList.innerHTML = `<li class="hint">${t('dashboard.noProfile')}</li>`;
+    return;
+  }
+
+  const now = new Date();
+  const todaysEntries = allEntries
+    .filter(en => isSameDay(new Date(en.startDateTime), now))
+    .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+
+  todayList.innerHTML = todaysEntries.map(en => {
+    const task = taskInfoById[en.taskID];
+    const time = new Date(en.startDateTime).toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' });
+    const icon = task?.discriminator === 'LearnSession' ? '📘' : (task?.recurring === 1 ? '♻' : '📅');
+    return `<li>${icon} ${time} – ${task ? task.taskName : 'Task ' + en.taskID}</li>`;
+  }).join('') || `<li class="hint">${t('dashboard.noAppointmentsToday')}</li>`;
+
+  const openTasks = Object.values(taskInfoById).filter(task => task.status && task.status !== 'erledigt');
+  openList.innerHTML = openTasks.map(task =>
+    `<li>✓ ${task.taskName} <span class="hint">(${task.discriminator})</span></li>`
+  ).join('') || `<li class="hint">${t('dashboard.noOpenTasks')}</li>`;
+}
+
+// ---------- Globale Suche ----------
+
+const searchInput = document.getElementById('global-search');
+const searchResults = document.getElementById('search-results');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) {
+    searchResults.classList.add('hidden');
+    searchResults.innerHTML = '';
+    return;
+  }
+
+  const courseMatches = (allCoursesCache || []).filter(c => c.courseName.toLowerCase().includes(q));
+  const taskMatches = Object.values(taskInfoById).filter(t => t.taskName.toLowerCase().includes(q));
+  const entryMatches = allEntries.filter(en => {
+    const task = taskInfoById[en.taskID];
+    return task && task.taskName.toLowerCase().includes(q);
+  });
+
+  const sections = [];
+  if (courseMatches.length) {
+    sections.push(`<div class="search-group-label">📘 Kurse</div>` +
+      courseMatches.map(c => `<button type="button" class="search-result-item" data-view="kurse">📘 ${c.courseName}</button>`).join(''));
+  }
+  if (taskMatches.length) {
+    sections.push(`<div class="search-group-label">✓ Aufgaben &amp; Termine</div>` +
+      taskMatches.map(t => `<button type="button" class="search-result-item" data-view="kurse">${t.discriminator === 'LearnSession' ? '📘' : '✓'} ${t.taskName}</button>`).join(''));
+  }
+  if (entryMatches.length) {
+    sections.push(`<div class="search-group-label">📅 Kalendereinträge</div>` +
+      entryMatches.map(en => {
+        const task = taskInfoById[en.taskID];
+        const date = new Date(en.startDateTime).toLocaleDateString(localeTag());
+        return `<button type="button" class="search-result-item" data-view="kalender">📅 ${task.taskName} (${date})</button>`;
+      }).join(''));
+  }
+
+  searchResults.innerHTML = sections.join('') || '<div class="search-group-label">Keine Treffer</div>';
+  searchResults.classList.remove('hidden');
+  searchResults.querySelectorAll('.search-result-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      switchView(btn.dataset.view);
+      searchResults.classList.add('hidden');
+      searchInput.value = '';
+    });
+  });
+});
+
+document.addEventListener('click', (e) => {
+  if (!searchResults.contains(e.target) && e.target !== searchInput) {
+    searchResults.classList.add('hidden');
+  }
+});
 
 async function deleteEntry(entryID) {
   console.log('deleteEntry() aufgerufen mit entryID:', entryID, typeof entryID);
@@ -677,7 +1105,7 @@ function renderWeekView() {
   weekEnd.setDate(weekEnd.getDate() + 6);
 
   document.getElementById('cal-label').textContent =
-    `${weekStart.toLocaleDateString('de-DE')} – ${weekEnd.toLocaleDateString('de-DE')}`;
+    `${weekStart.toLocaleDateString(localeTag())} – ${weekEnd.toLocaleDateString(localeTag())}`;
 
   const grid = document.createElement('div');
   grid.className = 'week-grid';
@@ -697,7 +1125,7 @@ function renderWeekView() {
   days.forEach((d, i) => {
     const header = document.createElement('div');
     header.className = 'week-header';
-    header.textContent = `${WEEKDAY_LABELS[i]} ${d.getDate()}.${d.getMonth() + 1}.`;
+    header.textContent = `${getWeekdayLabels()[i]} ${d.getDate()}.${d.getMonth() + 1}.`;
     header.style.gridColumn = i + 2;
     header.style.gridRow = 1;
     grid.appendChild(header);
@@ -749,7 +1177,7 @@ function renderWeekView() {
     chip.style.gridColumn = dayIndex + 2;
     chip.style.gridRow = `${startSlot + 2} / ${endSlot + 2}`;
     chip.textContent = task ? task.taskName : `Task ${en.taskID}`;
-    chip.title = `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    chip.title = `${start.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' })}`;
     chip.addEventListener('click', () => openEditEntryModal(en));
     grid.appendChild(chip);
   });
@@ -764,12 +1192,12 @@ function renderMonthView() {
   const gridStart = startOfWeek(firstOfMonth);
 
   document.getElementById('cal-label').textContent =
-    calendarAnchor.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    calendarAnchor.toLocaleDateString(localeTag(), { month: 'long', year: 'numeric' });
 
   const grid = document.createElement('div');
   grid.className = 'month-grid';
 
-  WEEKDAY_LABELS.forEach(label => {
+  getWeekdayLabels().forEach(label => {
     const el = document.createElement('div');
     el.className = 'month-weekday';
     el.textContent = label;
@@ -802,7 +1230,7 @@ function renderMonthView() {
       const task = taskInfoById[en.taskID];
       const chip = document.createElement('div');
       chip.className = `event-chip ${eventClassFor(task)}`;
-      chip.textContent = `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} ${task ? task.taskName : ''}`;
+      chip.textContent = `${start.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' })} ${task ? task.taskName : ''}`;
       chip.addEventListener('click', () => openEditEntryModal(en));
       cell.appendChild(chip);
     });
@@ -814,6 +1242,8 @@ function renderMonthView() {
 }
 
 // ---------- Init ----------
+
+applyLanguage(currentLang);
 
 (async function init() {
   try {
