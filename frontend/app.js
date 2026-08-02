@@ -362,6 +362,16 @@ async function requestScheduleGeneration(days, mode) {
 document.getElementById('generate-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
+
+  const isUpdate = document.getElementById('generate-btn').textContent.includes('aktualisieren');
+  if (isUpdate) {
+    const confirmed = confirm(
+      'Dadurch werden alle bisher automatisch generierten Lernsessions gelöscht und neu berechnet ' +
+      '(manuell angelegte/bearbeitete Termine bleiben erhalten). Fortfahren?'
+    );
+    if (!confirmed) return;
+  }
+
   try {
     const days = Number(document.getElementById('generate-days').value) || 14;
     let result = await requestScheduleGeneration(days);
@@ -385,21 +395,105 @@ document.getElementById('generate-form').addEventListener('submit', async (e) =>
 
 // ---------- KI-Anpassung ----------
 
+function formatCandidateLine(c) {
+  if (c.action === 'create') {
+    const start = new Date(c.newStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const end = new Date(c.newEnd).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const label = c.entryType === 'FixedTask' ? `${c.taskName} (${c.appointmentType})` : c.courseName;
+    return `• NEU: ${label}: ${start} – ${end}`;
+  }
+  if (c.action === 'delete') {
+    const start = new Date(c.oldStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const end = new Date(c.oldEnd).toLocaleString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    return `• LÖSCHEN: ${c.taskName || 'Task ' + c.entryID} (${c.type}): ${start} – ${end}`;
+  }
+  if (c.action === 'rename') {
+    return `• UMBENENNEN: "${c.oldName}" → "${c.newName}"`;
+  }
+  const oldTime = new Date(c.oldStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const newTime = new Date(c.newStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return `• ${c.taskName || 'Task ' + c.entryID} (${c.type}): ${oldTime} → ${newTime}`;
+}
+
+const WEEKDAY_PATTERN = /montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|\bmo\.?|\bdi\.?|\bmi\.?|\bdo\.?|\bfr\.?|\bsa\.?|\bso\.?|\d{1,2}\.\d{1,2}\.?|\d{1,2}\.\s*(januar|februar|märz|april|mai|juni|juli|august|september|oktober|november|dezember)/i;
+
 document.getElementById('optimize-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
+
+  const changeDescription = document.getElementById('change-description').value;
+
+  // Bei Monatsansicht muss der Prompt einen konkreten Tag/Wochentag nennen,
+  // sonst wäre der Bezug zu unscharf ("diese Woche" ergibt in der Monatsansicht keinen Sinn)
+  if (calendarView === 'month' && !WEEKDAY_PATTERN.test(changeDescription)) {
+    showToast('Bitte in der Monatsansicht einen konkreten Tag angeben (z. B. "Freitag" oder "jeden Dienstag").', true);
+    return;
+  }
+
+  // Zeitraum = aktuell angezeigte Woche bzw. angezeigter Monat
+  let rangeStart, rangeEnd;
+  if (calendarView === 'week') {
+    rangeStart = startOfWeek(calendarAnchor);
+    rangeEnd = new Date(rangeStart);
+    rangeEnd.setDate(rangeEnd.getDate() + 7);
+  } else {
+    rangeStart = new Date(calendarAnchor.getFullYear(), calendarAnchor.getMonth(), 1);
+    rangeEnd = new Date(calendarAnchor.getFullYear(), calendarAnchor.getMonth() + 1, 1);
+  }
+
   try {
-    const changeDescription = document.getElementById('change-description').value;
-    const result = await api('/schedule/optimize', {
+    const preview = await api('/schedule/optimize', {
       method: 'POST',
-      body: JSON.stringify({ userID: currentUserID, changeDescription }),
+      body: JSON.stringify({
+        userID: currentUserID,
+        changeDescription,
+        rangeStart: rangeStart.toISOString(),
+        rangeEnd: rangeEnd.toISOString(),
+      }),
+    });
+
+    if (!preview.candidates || preview.candidates.length === 0) {
+      showToast(preview.message || 'Keine Anpassung nötig.');
+      e.target.reset();
+      return;
+    }
+
+    const confirmed = confirm(
+      `Folgende Änderungen werden vorgeschlagen:\n\n` +
+      preview.candidates.map(formatCandidateLine).join('\n') +
+      `\n\nÜbernehmen?`
+    );
+    if (!confirmed) {
+      showToast('Änderungen verworfen.');
+      return;
+    }
+
+    const result = await api('/schedule/optimize/apply', {
+      method: 'POST',
+      body: JSON.stringify({ userID: currentUserID, changeDescription, candidates: preview.candidates }),
     });
 
     showToast(result.message || 'Lernplan angepasst.');
     if (result.rejected && result.rejected.length > 0) {
-      console.warn('Von der KI vorgeschlagene, aber abgelehnte Änderungen:', result.rejected);
+      console.warn('Beim Übernehmen abgelehnte Änderungen:', result.rejected);
     }
     e.target.reset();
+    await loadEntries();
+  } catch (err) {
+    showToast('Fehler: ' + err.message, true);
+  }
+});
+
+// ---------- Rückgängig ----------
+
+document.getElementById('undo-btn').addEventListener('click', async () => {
+  if (!requireActiveUser()) return;
+  try {
+    const result = await api('/schedule/undo', {
+      method: 'POST',
+      body: JSON.stringify({ userID: currentUserID }),
+    });
+    showToast(result.message || 'Rückgängig gemacht.');
     await loadEntries();
   } catch (err) {
     showToast('Fehler: ' + err.message, true);
@@ -484,11 +578,89 @@ function updateGenerateButtonLabel() {
 }
 
 async function deleteEntry(entryID) {
-  if (!confirm('Diesen Kalendereintrag löschen?')) return;
-  await api(`/calendar-entries/${entryID}`, { method: 'DELETE' });
-  showToast('Eintrag gelöscht.');
-  await loadEntries();
+  console.log('deleteEntry() aufgerufen mit entryID:', entryID, typeof entryID);
+  const confirmed = confirm('Diesen Kalendereintrag löschen?');
+  console.log('confirm() Ergebnis:', confirmed);
+  if (!confirmed) return;
+  try {
+    const result = await api(`/calendar-entries/${entryID}`, { method: 'DELETE' });
+    console.log('DELETE Antwort:', result);
+    showToast('Eintrag gelöscht.');
+    await loadEntries();
+  } catch (err) {
+    console.error('Löschen fehlgeschlagen:', err);
+    showToast('Löschen fehlgeschlagen: ' + err.message, true);
+  }
 }
+
+// ---------- Kalendereintrag bearbeiten (Popup bei Klick auf einen Termin) ----------
+
+const editEntryModal = document.getElementById('edit-entry-modal');
+let editingEntryID = null;
+
+function toLocalInputValue(isoString) {
+  const d = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+let editingTaskID = null;
+
+function openEditEntryModal(entry) {
+  editingEntryID = entry.entryID;
+  editingTaskID = entry.taskID;
+  const task = taskInfoById[entry.taskID];
+  document.getElementById('edit-taskName').value = task ? task.taskName : '';
+  document.getElementById('edit-entry-task-name').textContent = task
+    ? `Typ: ${task.discriminator}${task.type ? ' - ' + task.type : ''}`
+    : '';
+  document.getElementById('edit-startDateTime').value = toLocalInputValue(entry.startDateTime);
+  document.getElementById('edit-endDateTime').value = toLocalInputValue(entry.endDateTime);
+  document.getElementById('edit-reminder').value = entry.reminder || '';
+  editEntryModal.classList.remove('hidden');
+}
+
+function closeEditEntryModal() {
+  editEntryModal.classList.add('hidden');
+  editingEntryID = null;
+  editingTaskID = null;
+}
+
+document.getElementById('close-edit-modal').addEventListener('click', closeEditEntryModal);
+editEntryModal.addEventListener('click', (e) => {
+  if (e.target === editEntryModal) closeEditEntryModal();
+});
+
+document.getElementById('edit-entry-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!editingEntryID) return;
+  try {
+    const newTaskName = document.getElementById('edit-taskName').value;
+    const currentTaskName = taskInfoById[editingTaskID]?.taskName;
+    if (editingTaskID && newTaskName && newTaskName !== currentTaskName) {
+      await api(`/tasks/${editingTaskID}/rename`, { method: 'PUT', body: JSON.stringify({ taskName: newTaskName }) });
+    }
+
+    const body = {
+      startDateTime: document.getElementById('edit-startDateTime').value,
+      endDateTime: document.getElementById('edit-endDateTime').value,
+      reminder: document.getElementById('edit-reminder').value,
+    };
+    await api(`/calendar-entries/${editingEntryID}`, { method: 'PUT', body: JSON.stringify(body) });
+    showToast('Kalendereintrag aktualisiert.');
+    closeEditEntryModal();
+    await loadEntries();
+  } catch (err) {
+    showToast('Fehler: ' + err.message, true);
+  }
+});
+
+document.getElementById('delete-entry-btn').addEventListener('click', async () => {
+  console.log('Löschen-Button geklickt, editingEntryID =', editingEntryID);
+  if (!editingEntryID) return;
+  await deleteEntry(editingEntryID);
+  closeEditEntryModal();
+});
 
 function renderCalendar() {
   document.getElementById('calendar-container').innerHTML = '';
@@ -578,7 +750,7 @@ function renderWeekView() {
     chip.style.gridRow = `${startSlot + 2} / ${endSlot + 2}`;
     chip.textContent = task ? task.taskName : `Task ${en.taskID}`;
     chip.title = `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
-    chip.addEventListener('click', () => deleteEntry(en.entryID));
+    chip.addEventListener('click', () => openEditEntryModal(en));
     grid.appendChild(chip);
   });
 
@@ -631,7 +803,7 @@ function renderMonthView() {
       const chip = document.createElement('div');
       chip.className = `event-chip ${eventClassFor(task)}`;
       chip.textContent = `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} ${task ? task.taskName : ''}`;
-      chip.addEventListener('click', () => deleteEntry(en.entryID));
+      chip.addEventListener('click', () => openEditEntryModal(en));
       cell.appendChild(chip);
     });
 

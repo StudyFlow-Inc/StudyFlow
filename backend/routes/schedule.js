@@ -252,7 +252,7 @@ router.post('/optimize', async (req, res) => {
 
     // ALLE Termine im Zeitraum holen - FixedTask + LearnSession
     const rows = db.prepare(`
-      SELECT ce.entryID, ce.startDateTime, ce.endDateTime, ce.isManual,
+      SELECT ce.entryID, ce.startDateTime, ce.endDateTime, ce.isManual, ce.taskID,
              t.discriminator, t.taskName
       FROM calendar_entry ce
       JOIN task t ON t.taskID = ce.taskID
@@ -470,6 +470,71 @@ router.post('/optimize', async (req, res) => {
       }
     }
 
+    // Löschungen validieren: Termin muss existieren, editable sein, und
+    // darf sich nicht bereits mit einem "changes"-Eintrag überschneiden
+    // (ein Termin taucht pro Antwort nur einmal auf)
+    const alreadyHandled = new Set(candidates.filter((c) => c.action === 'move').map((c) => c.entryID));
+
+    for (const d of result.deletions || []) {
+      const info = entryInfoById.get(d.entryID);
+      if (!info) {
+        rejected.push({ ...d, rejectReason: 'unbekannte entryID' });
+        continue;
+      }
+      if (!info.editable) {
+        rejected.push({ ...d, rejectReason: 'Termin ist geschützt (manuell bzw. nicht Teil der Änderung)' });
+        continue;
+      }
+      if (alreadyHandled.has(d.entryID)) {
+        rejected.push({ ...d, rejectReason: 'Termin wird bereits verschoben, kann nicht gleichzeitig gelöscht werden' });
+        continue;
+      }
+
+      currentTimes.delete(d.entryID);
+      candidates.push({
+        action: 'delete',
+        entryID: d.entryID,
+        type: info.discriminator,
+        taskName: info.taskName,
+        oldStart: info.startDateTime,
+        oldEnd: info.endDateTime,
+        reason: d.reason || changeDescription,
+      });
+    }
+
+    // Umbenennungen validieren: Termin muss existieren, editable sein, und
+    // darf nicht bereits verschoben oder gelöscht werden
+    const alreadyDeleted = new Set(candidates.filter((c) => c.action === 'delete').map((c) => c.entryID));
+
+    for (const r of result.renames || []) {
+      const info = entryInfoById.get(r.entryID);
+      if (!info) {
+        rejected.push({ ...r, rejectReason: 'unbekannte entryID' });
+        continue;
+      }
+      if (!info.editable) {
+        rejected.push({ ...r, rejectReason: 'Termin ist geschützt (manuell bzw. nicht Teil der Änderung)' });
+        continue;
+      }
+      if (alreadyDeleted.has(r.entryID)) {
+        rejected.push({ ...r, rejectReason: 'Termin wird bereits gelöscht, kann nicht gleichzeitig umbenannt werden' });
+        continue;
+      }
+      if (!r.newName || !r.newName.trim()) {
+        rejected.push({ ...r, rejectReason: 'newName fehlt' });
+        continue;
+      }
+
+      candidates.push({
+        action: 'rename',
+        entryID: r.entryID,
+        type: info.discriminator,
+        oldName: info.taskName,
+        newName: r.newName.trim(),
+        reason: r.reason || changeDescription,
+      });
+    }
+
     res.json({
       message: result.summary || `${candidates.length} Vorschlag/Vorschläge.`,
       candidates,
@@ -576,6 +641,28 @@ router.post('/optimize/apply', (req, res) => {
         }
         const info = insertEntry.run(userID, taskID, toLocalISOString(newStart), toLocalISOString(newEnd));
         applied.push({ action: 'create', entryType: 'LearnSession', entryID: info.lastInsertRowid, courseName: c.courseName, newStart: c.newStart, newEnd: c.newEnd });
+        continue;
+      }
+
+      if (c.action === 'delete') {
+        const old = getEntry.get(c.entryID, userID);
+        if (!old) {
+          rejected.push({ ...c, rejectReason: 'Termin existiert nicht mehr' });
+          continue;
+        }
+        db.prepare('DELETE FROM calendar_entry WHERE entryID = ?').run(c.entryID);
+        applied.push({ action: 'delete', entryID: c.entryID, type: c.type, taskName: c.taskName });
+        continue;
+      }
+
+      if (c.action === 'rename') {
+        const old = getEntry.get(c.entryID, userID);
+        if (!old) {
+          rejected.push({ ...c, rejectReason: 'Termin existiert nicht mehr' });
+          continue;
+        }
+        db.prepare('UPDATE task SET taskName = ? WHERE taskID = ?').run(c.newName, old.taskID);
+        applied.push({ action: 'rename', entryID: c.entryID, type: c.type, oldName: c.oldName, newName: c.newName });
         continue;
       }
 

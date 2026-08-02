@@ -42,4 +42,13 @@ router.delete('/:id', (req, res) => {
   res.json({ deleted: true });
 });
 
+// eigener, schlanker Endpunkt zum Umbenennen (überschreibt nicht versehentlich
+// andere Felder, wie es ein vollständiges PUT ohne die übrigen Werte täte)
+router.put('/:id/rename', (req, res) => {
+  const { taskName } = req.body;
+  if (!taskName) return res.status(400).json({ error: 'taskName erforderlich' });
+  db.prepare('UPDATE task SET taskName = ? WHERE taskID = ?').run(taskName, req.params.id);
+  res.json({ renamed: true });
+});
+
 module.exports = router;

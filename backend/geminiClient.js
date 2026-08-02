@@ -21,6 +21,10 @@ B) Eine Bitte, NEUE Lernsessions einzuplanen (z. B. "Plane Lernsessions für Dat
    -> neue Einträge mit entryType "LearnSession" (siehe "newEntries" unten)
 C) Eine Bitte, einen NEUEN festen Termin anzulegen (z. B. "Zahnarzttermin Freitag 10-11 Uhr")
    -> neuer Eintrag mit entryType "FixedTask" (siehe "newEntries" unten)
+D) Eine Bitte, einen bestehenden Termin ZU LÖSCHEN (z. B. "Training am Donnerstag fällt aus", "Lösche die Lernsession für Analysis am Montag")
+   -> identifiziere GENAU DIESEN einen Termin anhand von Name/Zeit und gib ihn in "deletions" an - aber NUR wenn "editable": true für ihn gilt
+E) Eine Bitte, einen bestehenden Termin UMZUBENENNEN (z. B. "Nenne den Zahnarzttermin in Kontrolltermin um")
+   -> identifiziere GENAU DIESEN einen Termin anhand von Name/Zeit und gib ihn in "renames" an - aber NUR wenn "editable": true für ihn gilt
 
 Alle relevanten bestehenden Termine im Zeitraum (JSON, "entryID" ist der eindeutige Bezeichner):
 ${JSON.stringify(allEntries, null, 2)}
@@ -45,6 +49,8 @@ Randbedingungen:
 - Erfinde keine Kurse - nutze für "courseName" exakt einen Namen aus der Kursliste oben
 - Ein neuer FixedTask braucht einen sinnvollen "taskName" (z. B. "Zahnarzttermin") und "appointmentType" (einer von: Arbeit, Freizeit, Training, Sonstiges)
 - Kein neuer oder verschobener Termin darf sich mit einem bestehenden oder einem anderen neuen Termin überschneiden
+- Lösche NUR einen Termin mit "editable": true, und nur wenn er eindeutig identifizierbar ist (Name + Zeit passen erkennbar zur Anfrage). Im Zweifel lieber NICHTS löschen, statt zu raten
+- Ein Termin taucht pro Antwort nur EINMAL auf: entweder in "changes", "deletions" oder unverändert - niemals in mehreren gleichzeitig
 
 WICHTIG zum Zeitformat: Alle Datums-/Uhrzeitangaben oben sind LOKALE Uhrzeit (Wanduhrzeit), OHNE Zeitzonen-Suffix und OHNE "Z". Führe KEINE Umrechnung nach UTC oder in eine andere Zeitzone durch - behandle die Zahlen genau so, wie sie dastehen (z. B. bedeutet "09:00:00" wortwörtlich 9 Uhr morgens lokale Zeit). Gib deine Antwortzeiten im EXAKT GLEICHEN Format zurück: "YYYY-MM-DDTHH:MM:SS", ohne "Z", ohne Zeitzonen-Offset.
 
@@ -57,10 +63,16 @@ Antworte AUSSCHLIESSLICH mit folgendem JSON-Format, ohne zusätzlichen Text, ohn
     { "entryType": "LearnSession", "courseName": "<exakter Kursname>", "start": "<YYYY-MM-DDTHH:MM:SS>", "end": "<YYYY-MM-DDTHH:MM:SS>", "reason": "<kurzer Grund>" },
     { "entryType": "FixedTask", "taskName": "<Bezeichnung>", "appointmentType": "<Arbeit|Freizeit|Training|Sonstiges>", "start": "<YYYY-MM-DDTHH:MM:SS>", "end": "<YYYY-MM-DDTHH:MM:SS>", "reason": "<kurzer Grund>" }
   ],
+  "deletions": [
+    { "entryID": <Zahl>, "reason": "<kurzer Grund>" }
+  ],
+  "renames": [
+    { "entryID": <Zahl>, "newName": "<neue Bezeichnung>", "reason": "<kurzer Grund>" }
+  ],
   "summary": "<ein Satz, der alles zusammenfasst>"
 }
 
-Wenn nichts verschoben werden muss, "changes": []. Wenn keine neuen Einträge gewünscht/nötig sind, "newEntries": [].`;
+Wenn nichts verschoben werden muss, "changes": []. Wenn keine neuen Einträge gewünscht/nötig sind, "newEntries": []. Wenn nichts gelöscht werden soll, "deletions": []. Wenn nichts umbenannt werden soll, "renames": [].`;
 }
 
 /**

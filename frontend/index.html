@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lernplaner – Dateneingabe</title>
+<title>StudyFlow</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <header class="topbar">
-  <h1>Lernplaner</h1>
+  <h1>StudyFlow</h1>
   <div id="active-user" class="active-user">Kein Profil aktiv</div>
 </header>
 
@@ -196,10 +196,10 @@
 
       <div class="card">
         <h2>KI-Anpassung</h2>
-        <p class="hint">Beschreibe, was sich geändert hat – die KI verschiebt nur die betroffenen, automatisch geplanten Lernsessions.</p>
+        <p class="hint">Bezieht sich immer auf den aktuell angezeigten Zeitraum (Woche/Monat). Kann Termine verschieben, neu anlegen oder löschen. In der Monatsansicht bitte einen konkreten Tag angeben (z. B. "Freitag" oder "jeden Dienstag").</p>
         <form id="optimize-form">
-          <label>Was hat sich geändert?
-            <input type="text" id="change-description" placeholder="z. B. Schicht am Montag wurde bis 20 Uhr verlängert" required>
+          <label>Was hat sich geändert oder was soll geplant werden?
+            <input type="text" id="change-description" placeholder="z. B. Schicht am Montag bis 20 Uhr verlängert / Plane Lernsessions für Datenbanken diese Woche" required>
           </label>
           <button type="submit">Lernplan anpassen lassen</button>
         </form>
@@ -217,6 +217,7 @@
           <span id="cal-label"></span>
           <button type="button" id="cal-next">›</button>
           <button type="button" id="cal-today" class="secondary">Heute</button>
+          <button type="button" id="undo-btn" class="secondary" title="Letzte Änderung rückgängig machen">↺ Rückgängig</button>
         </div>
         <button type="button" id="open-entry-modal-btn" class="add-fab" title="Kalendereintrag anlegen">+</button>
       </div>
@@ -247,6 +248,35 @@
         <input type="text" id="reminder" placeholder="z. B. 30 Min. vorher">
       </label>
       <button type="submit">Eintrag anlegen</button>
+    </form>
+  </div>
+</div>
+
+<!-- POPUP: Kalendereintrag bearbeiten/löschen -->
+<div id="edit-entry-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Kalendereintrag bearbeiten</h2>
+      <button type="button" id="close-edit-modal" class="modal-close" aria-label="Schließen">&times;</button>
+    </div>
+    <form id="edit-entry-form">
+      <label>Bezeichnung
+        <input type="text" id="edit-taskName" required>
+      </label>
+      <p id="edit-entry-task-name" class="hint"></p>
+      <label>Start
+        <input type="datetime-local" id="edit-startDateTime" required>
+      </label>
+      <label>Ende
+        <input type="datetime-local" id="edit-endDateTime" required>
+      </label>
+      <label>Erinnerung
+        <input type="text" id="edit-reminder">
+      </label>
+      <div class="modal-actions">
+        <button type="submit">Speichern</button>
+        <button type="button" id="delete-entry-btn" class="secondary">Löschen</button>
+      </div>
     </form>
   </div>
 </div>

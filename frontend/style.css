@@ -397,6 +397,8 @@ button.secondary:hover {
 }
 
 .week-event {
+  position: relative;
+  z-index: 2;
   font-size: 0.7rem;
   padding: 0.1rem 0.3rem;
   border-radius: 4px;

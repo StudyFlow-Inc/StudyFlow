@@ -10,10 +10,12 @@
  */
 const db = require('./db');
 
+const { toLocalISOString } = require('./scheduler');
+
 function isoAt(date, hour, minute = 0) {
   const d = new Date(date);
   d.setHours(hour, minute, 0, 0);
-  return d.toISOString();
+  return toLocalISOString(d);
 }
 
 const seedMonth = db.transaction(() => {
