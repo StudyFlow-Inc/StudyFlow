@@ -7,6 +7,7 @@ const courseRouter = require('./routes/course');
 const taskRouter = require('./routes/task');
 const calendarEntryRouter = require('./routes/calendarEntry');
 const calendarChangeRouter = require('./routes/calendarChange');
+const scheduleRouter = require('./routes/schedule');
 
 const app = express();
 app.use(cors());
@@ -26,7 +27,8 @@ app.use('/api/courses', courseRouter);
 app.use('/api/tasks', taskRouter);
 app.use('/api/calendar-entries', calendarEntryRouter);
 app.use('/api/calendar-changes', calendarChangeRouter);
+app.use('/api/schedule', scheduleRouter);
 
 app.listen(3000, () => {
-  console.log('Backend läuft auf http://localhost:3000');
+  console.log('Backend running on http://localhost:3000');
 });
