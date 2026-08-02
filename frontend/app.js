@@ -87,6 +87,7 @@ document.getElementById('select-user-btn').addEventListener('click', async () =>
   localStorage.setItem('currentUserID', currentUserID);
   showToast('Profil aktiviert.');
   await refreshActiveUserDisplay();
+  await loadPreferencesIntoForm();
   await loadCourses();
   await loadTasks();
   await loadEntries();
@@ -115,12 +116,74 @@ async function refreshActiveUserDisplay() {
   }
 }
 
+// ---------- Bevorzugte Lernzeiten (mehrere Uhrzeiten) ----------
+
+function addPreferredTimeRow(value = '') {
+  const list = document.getElementById('preferred-times-list');
+  const row = document.createElement('div');
+  row.className = 'repeatable-row';
+  row.innerHTML = `
+    <input type="time" class="preferredTime-input" value="${value}">
+    <button type="button" class="secondary remove-time-btn">Entfernen</button>
+  `;
+  row.querySelector('.remove-time-btn').addEventListener('click', () => {
+    if (document.querySelectorAll('.preferredTime-input').length > 1) {
+      row.remove();
+    } else {
+      row.querySelector('input').value = '';
+    }
+  });
+  list.appendChild(row);
+}
+
+document.querySelectorAll('.remove-time-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    const row = e.target.closest('.repeatable-row');
+    if (document.querySelectorAll('.preferredTime-input').length > 1) {
+      row.remove();
+    } else {
+      row.querySelector('input').value = '';
+    }
+  });
+});
+
+document.getElementById('add-time-btn').addEventListener('click', () => addPreferredTimeRow());
+
+function getPreferredTimesFromForm() {
+  return Array.from(document.querySelectorAll('.preferredTime-input'))
+    .map(input => input.value)
+    .filter(Boolean);
+}
+
+function setPreferredTimesInForm(times) {
+  const list = document.getElementById('preferred-times-list');
+  list.innerHTML = '';
+  if (!times || times.length === 0) {
+    addPreferredTimeRow();
+    return;
+  }
+  times.forEach(t => addPreferredTimeRow(t));
+}
+
+async function loadPreferencesIntoForm() {
+  if (!currentUserID) return;
+  try {
+    const prefs = await api(`/users/${currentUserID}/preferences`);
+    setPreferredTimesInForm(prefs.preferredTimes);
+    document.getElementById('maxHoursPerDay').value = prefs.maxHoursPerDay ?? '';
+    document.getElementById('breakDuration').value = prefs.breakDuration ?? '';
+    document.getElementById('bufferBeforeExam').value = prefs.bufferBeforeExam ?? '';
+  } catch (err) {
+    showToast('Einstellungen konnten nicht geladen werden: ' + err.message, true);
+  }
+}
+
 document.getElementById('preferences-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
   try {
     const body = {
-      preferredTime: document.getElementById('preferredTime').value,
+      preferredTimes: getPreferredTimesFromForm(),
       maxHoursPerDay: Number(document.getElementById('maxHoursPerDay').value) || null,
       breakDuration: Number(document.getElementById('breakDuration').value) || null,
       bufferBeforeExam: Number(document.getElementById('bufferBeforeExam').value) || null,
@@ -248,7 +311,23 @@ async function loadTasks() {
   });
 }
 
-// ---------- Kalendereinträge ----------
+// ---------- Kalendereintrag-Popup ----------
+
+const entryModal = document.getElementById('entry-modal');
+
+document.getElementById('open-entry-modal-btn').addEventListener('click', () => {
+  if (!requireActiveUser()) return;
+  entryModal.classList.remove('hidden');
+});
+
+function closeEntryModal() {
+  entryModal.classList.add('hidden');
+}
+
+document.getElementById('close-entry-modal').addEventListener('click', closeEntryModal);
+entryModal.addEventListener('click', (e) => {
+  if (e.target === entryModal) closeEntryModal();
+});
 
 document.getElementById('entry-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -264,37 +343,412 @@ document.getElementById('entry-form').addEventListener('submit', async (e) => {
     await api('/calendar-entries', { method: 'POST', body: JSON.stringify(body) });
     showToast('Kalendereintrag angelegt.');
     e.target.reset();
+    closeEntryModal();
     await loadEntries();
   } catch (err) {
     showToast('Fehler: ' + err.message, true);
   }
 });
 
-async function loadEntries() {
-  const entries = currentUserID
-    ? await api(`/calendar-entries/user/${currentUserID}`)
-    : [];
-  const tasks = await api('/tasks');
-  const taskNameById = Object.fromEntries(tasks.map(t => [t.taskID, t.taskName]));
+// ---------- Lernplan generieren ----------
 
-  const tbody = document.getElementById('entry-list');
-  tbody.innerHTML = entries.map(en => `
-    <tr>
-      <td>${taskNameById[en.taskID] ?? en.taskID}</td>
-      <td>${new Date(en.startDateTime).toLocaleString('de-DE')}</td>
-      <td>${new Date(en.endDateTime).toLocaleString('de-DE')}</td>
-      <td>${en.reminder ?? ''}</td>
-      <td><button class="secondary" data-delete-entry="${en.entryID}">Löschen</button></td>
-    </tr>
-  `).join('') || '<tr><td colspan="5" class="hint">Noch keine Kalendereinträge.</td></tr>';
-
-  tbody.querySelectorAll('[data-delete-entry]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await api(`/calendar-entries/${btn.dataset.deleteEntry}`, { method: 'DELETE' });
-      showToast('Eintrag gelöscht.');
-      await loadEntries();
-    });
+async function requestScheduleGeneration(days, mode) {
+  return api('/schedule/generate', {
+    method: 'POST',
+    body: JSON.stringify({ userID: currentUserID, days, ...(mode ? { mode } : {}) }),
   });
+}
+
+document.getElementById('generate-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!requireActiveUser()) return;
+
+  const isUpdate = document.getElementById('generate-btn').textContent.includes('aktualisieren');
+  if (isUpdate) {
+    const confirmed = confirm(
+      'Dadurch werden alle bisher automatisch generierten Lernsessions gelöscht und neu berechnet ' +
+      '(manuell angelegte/bearbeitete Termine bleiben erhalten). Fortfahren?'
+    );
+    if (!confirmed) return;
+  }
+
+  try {
+    const days = Number(document.getElementById('generate-days').value) || 14;
+    let result = await requestScheduleGeneration(days);
+
+    if (result.needsConfirmation) {
+      const useShorterSessions = confirm(
+        `${result.message}\n\n` +
+        `OK = kürzere Lernsessions einbauen, um alle ${result.requestedDays} Tage zu nutzen\n` +
+        `Abbrechen = kürzeren Zeitraum (~${result.achievableDays} Tage) verwenden`
+      );
+      result = await requestScheduleGeneration(days, useShorterSessions ? 'stretch' : 'shorten');
+    }
+
+    showToast(result.message || 'Lernplan generiert.');
+    await loadTasks();
+    await loadEntries();
+  } catch (err) {
+    showToast('Fehler: ' + err.message, true);
+  }
+});
+
+// ---------- KI-Anpassung ----------
+
+function formatCandidateLine(c) {
+  const oldTime = new Date(c.oldStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  const newTime = new Date(c.newStart).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return `• ${c.taskName || 'Task ' + c.entryID} (${c.type}): ${oldTime} → ${newTime}`;
+}
+
+document.getElementById('optimize-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!requireActiveUser()) return;
+  try {
+    const changeDescription = document.getElementById('change-description').value;
+    const preview = await api('/schedule/optimize', {
+      method: 'POST',
+      body: JSON.stringify({ userID: currentUserID, changeDescription }),
+    });
+
+    if (!preview.candidates || preview.candidates.length === 0) {
+      showToast(preview.message || 'Keine Anpassung nötig.');
+      e.target.reset();
+      return;
+    }
+
+    const confirmed = confirm(
+      `Folgende Änderungen werden vorgeschlagen:\n\n` +
+      preview.candidates.map(formatCandidateLine).join('\n') +
+      `\n\nÜbernehmen?`
+    );
+    if (!confirmed) {
+      showToast('Änderungen verworfen.');
+      return;
+    }
+
+    const result = await api('/schedule/optimize/apply', {
+      method: 'POST',
+      body: JSON.stringify({ userID: currentUserID, changeDescription, candidates: preview.candidates }),
+    });
+
+    showToast(result.message || 'Lernplan angepasst.');
+    if (result.rejected && result.rejected.length > 0) {
+      console.warn('Beim Übernehmen abgelehnte Änderungen:', result.rejected);
+    }
+    e.target.reset();
+    await loadEntries();
+  } catch (err) {
+    showToast('Fehler: ' + err.message, true);
+  }
+});
+
+// ---------- Rückgängig ----------
+
+document.getElementById('undo-btn').addEventListener('click', async () => {
+  if (!requireActiveUser()) return;
+  try {
+    const result = await api('/schedule/undo', {
+      method: 'POST',
+      body: JSON.stringify({ userID: currentUserID }),
+    });
+    showToast(result.message || 'Rückgängig gemacht.');
+    await loadEntries();
+  } catch (err) {
+    showToast('Fehler: ' + err.message, true);
+  }
+});
+
+// ---------- Kalenderansicht (Woche/Monat) ----------
+
+const HOUR_START = 6;
+const HOUR_END = 23;
+const SLOT_MINUTES = 30;
+const SLOTS_PER_DAY = ((HOUR_END - HOUR_START) * 60) / SLOT_MINUTES;
+const WEEKDAY_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+let calendarView = 'week';
+let calendarAnchor = new Date();
+let allEntries = [];
+let taskInfoById = {};
+
+document.querySelectorAll('.view-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    calendarView = btn.dataset.view;
+    renderCalendar();
+  });
+});
+
+document.getElementById('cal-prev').addEventListener('click', () => {
+  moveAnchor(-1);
+  renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', () => {
+  moveAnchor(1);
+  renderCalendar();
+});
+document.getElementById('cal-today').addEventListener('click', () => {
+  calendarAnchor = new Date();
+  renderCalendar();
+});
+
+function moveAnchor(direction) {
+  if (calendarView === 'week') {
+    calendarAnchor.setDate(calendarAnchor.getDate() + direction * 7);
+  } else {
+    calendarAnchor.setMonth(calendarAnchor.getMonth() + direction);
+  }
+}
+
+function startOfWeek(date) {
+  const d = new Date(date);
+  const day = (d.getDay() + 6) % 7; // Montag = 0
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function isSameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function eventClassFor(task) {
+  if (!task) return 'event-sonstiges';
+  if (task.discriminator === 'LearnSession') return 'event-learn';
+  const map = { Arbeit: 'event-arbeit', Freizeit: 'event-freizeit', Training: 'event-training' };
+  return map[task.type] || 'event-sonstiges';
+}
+
+async function loadEntries() {
+  allEntries = currentUserID ? await api(`/calendar-entries/user/${currentUserID}`) : [];
+  const tasks = await api('/tasks');
+  taskInfoById = Object.fromEntries(tasks.map(t => [t.taskID, t]));
+  updateGenerateButtonLabel();
+  renderCalendar();
+}
+
+function updateGenerateButtonLabel() {
+  const hasLearnSessions = allEntries.some(en => taskInfoById[en.taskID]?.discriminator === 'LearnSession');
+  document.getElementById('generate-btn').textContent = hasLearnSessions
+    ? 'Lernsessions aktualisieren'
+    : 'Lernsessions einplanen';
+}
+
+async function deleteEntry(entryID) {
+  if (!confirm('Diesen Kalendereintrag löschen?')) return;
+  await api(`/calendar-entries/${entryID}`, { method: 'DELETE' });
+  showToast('Eintrag gelöscht.');
+  await loadEntries();
+}
+
+// ---------- Kalendereintrag bearbeiten (Popup bei Klick auf einen Termin) ----------
+
+const editEntryModal = document.getElementById('edit-entry-modal');
+let editingEntryID = null;
+
+function toLocalInputValue(isoString) {
+  const d = new Date(isoString);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function openEditEntryModal(entry) {
+  editingEntryID = entry.entryID;
+  const task = taskInfoById[entry.taskID];
+  document.getElementById('edit-entry-task-name').textContent = task
+    ? `${task.taskName} (${task.discriminator})`
+    : `Task ${entry.taskID}`;
+  document.getElementById('edit-startDateTime').value = toLocalInputValue(entry.startDateTime);
+  document.getElementById('edit-endDateTime').value = toLocalInputValue(entry.endDateTime);
+  document.getElementById('edit-reminder').value = entry.reminder || '';
+  editEntryModal.classList.remove('hidden');
+}
+
+function closeEditEntryModal() {
+  editEntryModal.classList.add('hidden');
+  editingEntryID = null;
+}
+
+document.getElementById('close-edit-modal').addEventListener('click', closeEditEntryModal);
+editEntryModal.addEventListener('click', (e) => {
+  if (e.target === editEntryModal) closeEditEntryModal();
+});
+
+document.getElementById('edit-entry-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!editingEntryID) return;
+  try {
+    const body = {
+      startDateTime: document.getElementById('edit-startDateTime').value,
+      endDateTime: document.getElementById('edit-endDateTime').value,
+      reminder: document.getElementById('edit-reminder').value,
+    };
+    await api(`/calendar-entries/${editingEntryID}`, { method: 'PUT', body: JSON.stringify(body) });
+    showToast('Kalendereintrag aktualisiert.');
+    closeEditEntryModal();
+    await loadEntries();
+  } catch (err) {
+    showToast('Fehler: ' + err.message, true);
+  }
+});
+
+document.getElementById('delete-entry-btn').addEventListener('click', async () => {
+  if (!editingEntryID) return;
+  await deleteEntry(editingEntryID);
+  closeEditEntryModal();
+});
+
+function renderCalendar() {
+  document.getElementById('calendar-container').innerHTML = '';
+  if (calendarView === 'week') {
+    renderWeekView();
+  } else {
+    renderMonthView();
+  }
+}
+
+function renderWeekView() {
+  const weekStart = startOfWeek(calendarAnchor);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
+  document.getElementById('cal-label').textContent =
+    `${weekStart.toLocaleDateString('de-DE')} – ${weekEnd.toLocaleDateString('de-DE')}`;
+
+  const grid = document.createElement('div');
+  grid.className = 'week-grid';
+  grid.style.gridTemplateRows = `auto repeat(${SLOTS_PER_DAY}, 22px)`;
+
+  // Kopfzeile
+  const corner = document.createElement('div');
+  corner.className = 'week-header corner';
+  grid.appendChild(corner);
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  days.forEach((d, i) => {
+    const header = document.createElement('div');
+    header.className = 'week-header';
+    header.textContent = `${WEEKDAY_LABELS[i]} ${d.getDate()}.${d.getMonth() + 1}.`;
+    header.style.gridColumn = i + 2;
+    header.style.gridRow = 1;
+    grid.appendChild(header);
+  });
+
+  // Stunden-Labels + leere Zellen als Raster
+  for (let slot = 0; slot < SLOTS_PER_DAY; slot++) {
+    const totalMinutes = HOUR_START * 60 + slot * SLOT_MINUTES;
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+
+    if (minute === 0) {
+      const label = document.createElement('div');
+      label.className = 'week-hour-label';
+      label.textContent = `${String(hour).padStart(2, '0')}:00`;
+      label.style.gridColumn = 1;
+      label.style.gridRow = slot + 2;
+      grid.appendChild(label);
+    }
+
+    for (let day = 0; day < 7; day++) {
+      const cell = document.createElement('div');
+      cell.className = 'week-cell';
+      cell.style.gridColumn = day + 2;
+      cell.style.gridRow = slot + 2;
+      grid.appendChild(cell);
+    }
+  }
+
+  // Einträge dieser Woche platzieren
+  const weekEntries = allEntries.filter(en => {
+    const start = new Date(en.startDateTime);
+    return days.some(d => isSameDay(d, start));
+  });
+
+  weekEntries.forEach(en => {
+    const start = new Date(en.startDateTime);
+    const end = new Date(en.endDateTime);
+    const dayIndex = days.findIndex(d => isSameDay(d, start));
+    if (dayIndex === -1) return;
+
+    const startSlot = Math.max(0, Math.round(((start.getHours() * 60 + start.getMinutes()) - HOUR_START * 60) / SLOT_MINUTES));
+    const endSlot = Math.min(SLOTS_PER_DAY, Math.round(((end.getHours() * 60 + end.getMinutes()) - HOUR_START * 60) / SLOT_MINUTES));
+    if (endSlot <= startSlot) return;
+
+    const task = taskInfoById[en.taskID];
+    const chip = document.createElement('div');
+    chip.className = `week-event ${eventClassFor(task)}`;
+    chip.style.gridColumn = dayIndex + 2;
+    chip.style.gridRow = `${startSlot + 2} / ${endSlot + 2}`;
+    chip.textContent = task ? task.taskName : `Task ${en.taskID}`;
+    chip.title = `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} – ${end.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    chip.addEventListener('click', () => openEditEntryModal(en));
+    grid.appendChild(chip);
+  });
+
+  document.getElementById('calendar-container').appendChild(grid);
+}
+
+function renderMonthView() {
+  const year = calendarAnchor.getFullYear();
+  const month = calendarAnchor.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const gridStart = startOfWeek(firstOfMonth);
+
+  document.getElementById('cal-label').textContent =
+    calendarAnchor.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+  const grid = document.createElement('div');
+  grid.className = 'month-grid';
+
+  WEEKDAY_LABELS.forEach(label => {
+    const el = document.createElement('div');
+    el.className = 'month-weekday';
+    el.textContent = label;
+    grid.appendChild(el);
+  });
+
+  const today = new Date();
+  const totalCells = 42; // 6 Wochen x 7 Tage, deckt jeden Monat ab
+
+  for (let i = 0; i < totalCells; i++) {
+    const day = new Date(gridStart);
+    day.setDate(day.getDate() + i);
+
+    const cell = document.createElement('div');
+    cell.className = 'month-day';
+    if (day.getMonth() !== month) cell.classList.add('outside');
+    if (isSameDay(day, today)) cell.classList.add('today');
+
+    const dayNumber = document.createElement('div');
+    dayNumber.className = 'day-number';
+    dayNumber.textContent = day.getDate();
+    cell.appendChild(dayNumber);
+
+    const dayEntries = allEntries
+      .filter(en => isSameDay(new Date(en.startDateTime), day))
+      .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+
+    dayEntries.forEach(en => {
+      const start = new Date(en.startDateTime);
+      const task = taskInfoById[en.taskID];
+      const chip = document.createElement('div');
+      chip.className = `event-chip ${eventClassFor(task)}`;
+      chip.textContent = `${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} ${task ? task.taskName : ''}`;
+      chip.addEventListener('click', () => openEditEntryModal(en));
+      cell.appendChild(chip);
+    });
+
+    grid.appendChild(cell);
+  }
+
+  document.getElementById('calendar-container').appendChild(grid);
 }
 
 // ---------- Init ----------
@@ -303,6 +757,7 @@ async function loadEntries() {
   try {
     await loadUsers();
     await refreshActiveUserDisplay();
+    await loadPreferencesIntoForm();
     await loadCourses();
     await loadTasks();
     await loadEntries();

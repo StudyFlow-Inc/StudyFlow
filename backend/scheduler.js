@@ -93,48 +93,44 @@ function allocateSessions({ freeSlots, courses, chunkHours = 2, breakMinutes = 1
 }
 
 /**
- * Übersetzt UserPreferences.preferredTime in eine Stunden-Spanne.
- * preferredTime ist eine konkrete Uhrzeit (z. B. "18:00") oder ein
- * Zeitraum ("18:00-21:00"). Eine einzelne Uhrzeit wird als "ab dieser
- * Zeit bis Tagesende bevorzugt" interpretiert. Liefert null, wenn das
- * Feld leer oder nicht auswertbar ist – dann wird rein chronologisch
- * geplant.
+ * Übersetzt UserPreferences.preferredTimes (JSON-Array mehrerer
+ * Uhrzeiten, z. B. '["08:00","18:00"]') in mehrere Stunden-Spannen.
+ * Jede Uhrzeit erzeugt ein Präferenz-Fenster von windowHours Länge ab
+ * dieser Zeit. Liefert ein leeres Array, wenn nichts auswertbar ist –
+ * dann wird rein chronologisch geplant.
  */
-function parsePreferredWindow(preferredTime, dayStartHour, dayEndHour) {
-  if (!preferredTime) return null;
-  const text = preferredTime.trim();
+function parsePreferredWindows(preferredTimes, dayStartHour, dayEndHour, windowHours = 3) {
+  if (!preferredTimes) return [];
 
-  // Zeitraum, z. B. "18:00-21:00" oder "18-21"
-  const rangeMatch = text.match(/^(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?$/);
-  if (rangeMatch) {
-    const startHour = Number(rangeMatch[1]) + (rangeMatch[2] ? Number(rangeMatch[2]) / 60 : 0);
-    const endHour = Number(rangeMatch[3]) + (rangeMatch[4] ? Number(rangeMatch[4]) / 60 : 0);
-    const clampedStart = Math.max(startHour, dayStartHour);
-    const clampedEnd = Math.min(endHour, dayEndHour);
-    if (clampedStart < clampedEnd) return { startHour: clampedStart, endHour: clampedEnd };
-    return null;
+  let times;
+  try {
+    times = typeof preferredTimes === 'string' ? JSON.parse(preferredTimes) : preferredTimes;
+  } catch {
+    times = [preferredTimes]; // Abwärtskompatibilität: einzelner String statt JSON-Array
   }
+  if (!Array.isArray(times)) times = [times];
 
-  // einzelne Uhrzeit, z. B. "18:00" -> bevorzugt ab dieser Zeit bis Tagesende
-  const singleMatch = text.match(/^(\d{1,2})(?::(\d{2}))?$/);
-  if (singleMatch) {
-    const startHour = Number(singleMatch[1]) + (singleMatch[2] ? Number(singleMatch[2]) / 60 : 0);
+  const windows = [];
+  for (const t of times) {
+    const match = String(t).trim().match(/^(\d{1,2})(?::(\d{2}))?$/);
+    if (!match) continue;
+    const startHour = Number(match[1]) + (match[2] ? Number(match[2]) / 60 : 0);
     const clampedStart = Math.max(startHour, dayStartHour);
-    if (clampedStart < dayEndHour) return { startHour: clampedStart, endHour: dayEndHour };
-    return null;
+    const clampedEnd = Math.min(startHour + windowHours, dayEndHour);
+    if (clampedStart < clampedEnd) windows.push({ startHour: clampedStart, endHour: clampedEnd });
   }
-
-  return null;
+  return windows;
 }
 
 /**
  * Teilt die freien Zeitfenster in "preferred" (überschneidet sich mit
- * dem bevorzugten Zeitfenster des Users, an jedem Tag neu berechnet)
- * und "other" (der Rest) auf. Slots, die nur teilweise überlappen,
- * werden an der Grenze aufgeteilt statt komplett verworfen.
+ * einem der bevorzugten Zeitfenster, an jedem Tag neu berechnet) und
+ * "other" (der Rest) auf. Überlappende Präferenz-Fenster desselben
+ * Tages werden zuerst zusammengeführt. Slots, die nur teilweise
+ * überlappen, werden an der Grenze aufgeteilt statt komplett verworfen.
  */
-function splitSlotsByPreference(freeSlots, preferredWindow) {
-  if (!preferredWindow) {
+function splitSlotsByPreference(freeSlots, preferredWindows) {
+  if (!preferredWindows || preferredWindows.length === 0) {
     return { preferred: [], other: [...freeSlots].sort((a, b) => a.start - b.start) };
   }
 
@@ -143,21 +139,39 @@ function splitSlotsByPreference(freeSlots, preferredWindow) {
 
   for (const slot of freeSlots) {
     const day = new Date(slot.start);
-    const prefStart = new Date(day);
-    prefStart.setHours(preferredWindow.startHour, 0, 0, 0);
-    const prefEnd = new Date(day);
-    prefEnd.setHours(preferredWindow.endHour, 0, 0, 0);
 
-    const overlapStart = slot.start > prefStart ? slot.start : prefStart;
-    const overlapEnd = slot.end < prefEnd ? slot.end : prefEnd;
+    const dayWindows = preferredWindows
+      .map((w) => {
+        const start = new Date(day);
+        start.setHours(Math.floor(w.startHour), Math.round((w.startHour % 1) * 60), 0, 0);
+        const end = new Date(day);
+        end.setHours(Math.floor(w.endHour), Math.round((w.endHour % 1) * 60), 0, 0);
+        return { start, end };
+      })
+      .sort((a, b) => a.start - b.start);
 
-    if (overlapStart < overlapEnd) {
-      preferred.push({ start: overlapStart, end: overlapEnd });
-      if (slot.start < overlapStart) other.push({ start: slot.start, end: overlapStart });
-      if (slot.end > overlapEnd) other.push({ start: overlapEnd, end: slot.end });
-    } else {
-      other.push(slot);
+    // überlappende Fenster desselben Tages zusammenführen
+    const merged = [];
+    for (const w of dayWindows) {
+      const last = merged[merged.length - 1];
+      if (last && w.start <= last.end) {
+        if (w.end > last.end) last.end = w.end;
+      } else {
+        merged.push({ ...w });
+      }
     }
+
+    let cursor = slot.start;
+    for (const w of merged) {
+      const overlapStart = cursor > w.start ? cursor : w.start;
+      const overlapEnd = slot.end < w.end ? slot.end : w.end;
+      if (overlapStart < overlapEnd) {
+        if (cursor < overlapStart) other.push({ start: cursor, end: overlapStart });
+        preferred.push({ start: overlapStart, end: overlapEnd });
+        cursor = overlapEnd;
+      }
+    }
+    if (cursor < slot.end) other.push({ start: cursor, end: slot.end });
   }
 
   preferred.sort((a, b) => a.start - b.start);
@@ -168,6 +182,6 @@ function splitSlotsByPreference(freeSlots, preferredWindow) {
 module.exports = {
   generateFreeSlots,
   allocateSessions,
-  parsePreferredWindow,
+  parsePreferredWindows,
   splitSlotsByPreference,
 };

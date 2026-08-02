@@ -1,10 +1,13 @@
-
-// db.js
 const Database = require('better-sqlite3');
-
 const path = require('path');
+const fs = require('fs');
 
-const db = new Database(path.join(__dirname, 'data', 'studyflow.db'));
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const db = new Database(path.join(dataDir, 'lernplaner.db'));
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -20,7 +23,7 @@ CREATE TABLE IF NOT EXISTS user (
 
 CREATE TABLE IF NOT EXISTS user_preferences (
   userID INTEGER PRIMARY KEY REFERENCES user(userID) ON DELETE CASCADE,
-  preferredTime TEXT,
+  preferredTimes TEXT,
   maxHoursPerDay REAL,
   breakDuration INTEGER,
   bufferBeforeExam INTEGER
@@ -53,7 +56,8 @@ CREATE TABLE IF NOT EXISTS calendar_entry (
   taskID INTEGER REFERENCES task(taskID) ON DELETE CASCADE,
   startDateTime TEXT NOT NULL,
   endDateTime TEXT NOT NULL,
-  reminder TEXT
+  reminder TEXT,
+  isManual INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS calendar_change (

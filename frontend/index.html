@@ -56,9 +56,14 @@
       <div class="card">
         <h2>Einstellungen (UserPreferences)</h2>
         <form id="preferences-form">
-          <label>Bevorzugte Lernzeit (ab)
-            <input type="time" id="preferredTime">
-          </label>
+          <label>Bevorzugte Lernzeiten (ab)</label>
+          <div id="preferred-times-list" class="repeatable-list">
+            <div class="repeatable-row">
+              <input type="time" class="preferredTime-input">
+              <button type="button" class="secondary remove-time-btn">Entfernen</button>
+            </div>
+          </div>
+          <button type="button" id="add-time-btn" class="secondary">+ Uhrzeit hinzufügen</button>
           <label>Max. Stunden pro Tag
             <input type="number" id="maxHoursPerDay" step="0.5">
           </label>
@@ -179,37 +184,100 @@
   <section id="kalender" class="tab-panel">
     <div class="grid">
       <div class="card">
-        <h2>Kalendereintrag anlegen</h2>
-        <form id="entry-form">
-          <label>Task
-            <select id="entry-task"></select>
+        <h2>Lernplan generieren</h2>
+        <p class="hint">Plant offene Lernzeit für alle Kurse des aktiven Profils in die freien Zeitfenster der nächsten Tage ein.</p>
+        <form id="generate-form">
+          <label>Zeitraum (Tage)
+            <input type="number" id="generate-days" value="14" min="1">
           </label>
-          <label>Start
-            <input type="datetime-local" id="startDateTime" required>
+          <button type="submit" id="generate-btn">Lernsessions einplanen</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>KI-Anpassung</h2>
+        <p class="hint">Beschreibe, was sich geändert hat – die KI verschiebt nur die betroffenen, automatisch geplanten Lernsessions.</p>
+        <form id="optimize-form">
+          <label>Was hat sich geändert?
+            <input type="text" id="change-description" placeholder="z. B. Schicht am Montag wurde bis 20 Uhr verlängert" required>
           </label>
-          <label>Ende
-            <input type="datetime-local" id="endDateTime" required>
-          </label>
-          <label>Erinnerung
-            <input type="text" id="reminder" placeholder="z. B. 30 Min. vorher">
-          </label>
-          <button type="submit">Eintrag anlegen</button>
+          <button type="submit">Lernplan anpassen lassen</button>
         </form>
       </div>
     </div>
 
     <div class="card list-card">
-      <h2>Kalendereinträge</h2>
-      <table>
-        <thead>
-          <tr><th>Task</th><th>Start</th><th>Ende</th><th>Erinnerung</th><th></th></tr>
-        </thead>
-        <tbody id="entry-list"></tbody>
-      </table>
+      <div class="calendar-toolbar">
+        <div class="view-switch">
+          <button type="button" class="view-btn active" data-view="week">Woche</button>
+          <button type="button" class="view-btn" data-view="month">Monat</button>
+        </div>
+        <div class="cal-nav">
+          <button type="button" id="cal-prev">‹</button>
+          <span id="cal-label"></span>
+          <button type="button" id="cal-next">›</button>
+          <button type="button" id="cal-today" class="secondary">Heute</button>
+          <button type="button" id="undo-btn" class="secondary" title="Letzte Änderung rückgängig machen">↺ Rückgängig</button>
+        </div>
+        <button type="button" id="open-entry-modal-btn" class="add-fab" title="Kalendereintrag anlegen">+</button>
+      </div>
+      <div id="calendar-container"></div>
     </div>
   </section>
 
 </main>
+
+<!-- POPUP: Kalendereintrag anlegen -->
+<div id="entry-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Kalendereintrag anlegen</h2>
+      <button type="button" id="close-entry-modal" class="modal-close" aria-label="Schließen">&times;</button>
+    </div>
+    <form id="entry-form">
+      <label>Task
+        <select id="entry-task"></select>
+      </label>
+      <label>Start
+        <input type="datetime-local" id="startDateTime" required>
+      </label>
+      <label>Ende
+        <input type="datetime-local" id="endDateTime" required>
+      </label>
+      <label>Erinnerung
+        <input type="text" id="reminder" placeholder="z. B. 30 Min. vorher">
+      </label>
+      <button type="submit">Eintrag anlegen</button>
+    </form>
+  </div>
+</div>
+
+<!-- POPUP: Kalendereintrag bearbeiten/löschen -->
+<div id="edit-entry-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Kalendereintrag bearbeiten</h2>
+      <button type="button" id="close-edit-modal" class="modal-close" aria-label="Schließen">&times;</button>
+    </div>
+    <form id="edit-entry-form">
+      <label>Task</label>
+      <p id="edit-entry-task-name" class="hint"></p>
+      <label>Start
+        <input type="datetime-local" id="edit-startDateTime" required>
+      </label>
+      <label>Ende
+        <input type="datetime-local" id="edit-endDateTime" required>
+      </label>
+      <label>Erinnerung
+        <input type="text" id="edit-reminder">
+      </label>
+      <div class="modal-actions">
+        <button type="submit">Speichern</button>
+        <button type="button" id="delete-entry-btn" class="secondary">Löschen</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <div id="toast" class="toast"></div>
 

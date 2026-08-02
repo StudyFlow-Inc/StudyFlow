@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
@@ -30,5 +32,8 @@ app.use('/api/calendar-changes', calendarChangeRouter);
 app.use('/api/schedule', scheduleRouter);
 
 app.listen(3000, () => {
-  console.log('Backend running on http://localhost:3000');
+  console.log('Backend läuft auf http://localhost:3000');
+  if (!process.env.GEMINI_API_KEY) {
+    console.log('Hinweis: GEMINI_API_KEY ist nicht gesetzt - /api/schedule/optimize wird fehlschlagen. Siehe .env.example.');
+  }
 });
