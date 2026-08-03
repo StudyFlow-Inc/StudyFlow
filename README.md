@@ -95,19 +95,7 @@ No separate SQLite installation needed – `better-sqlite3` bundles the
 engine as a native module. No build tools needed either, as long as you
 install a current Node.js LTS release (prebuilt binaries are used).
 
-## Quick start (recommended)
-
-1. Install Node.js once (see above)
-2. Double-click the launcher for your system:
-   - Windows: `Start-StudyFlow.bat`
-   - macOS: `Start-StudyFlow.command`
-   - Linux: run `./start-studyflow.sh` in a terminal
-3. On first run it installs dependencies automatically (only once), then
-   starts the server and opens your browser to `http://localhost:3000`
-
-That's it – no manual `npm install`, no separate frontend step.
-
-## Manual setup (alternative)
+## Manual setup
 
 ```bash
 cd backend
