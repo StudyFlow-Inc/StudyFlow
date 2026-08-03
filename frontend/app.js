@@ -193,6 +193,23 @@ const TRANSLATIONS = {
   'common.save': { de: 'Speichern', en: 'Save' },
   'common.delete': { de: 'Löschen', en: 'Delete' },
   'common.close': { de: 'Schließen', en: 'Close' },
+
+  'tutorial.title': { de: 'Willkommen bei StudyFlow', en: 'Welcome to StudyFlow' },
+  'tutorial.dashboardTitle': { de: 'Dashboard', en: 'Dashboard' },
+  'tutorial.dashboardDesc': { de: '– heutige Termine und offene Aufgaben auf einen Blick.', en: "– today's appointments and open tasks at a glance." },
+  'tutorial.kalenderTitle': { de: 'Kalender', en: 'Calendar' },
+  'tutorial.kalenderDesc': { de: '– Wochen-/Monatsansicht, Lernplan generieren, oder Termine über den +-Button hinzufügen.', en: '– week/month view, generate a study plan, or add entries via the + button.' },
+  'tutorial.kurseTitle': { de: 'Kurse', en: 'Courses' },
+  'tutorial.kurseDesc': { de: '– Kurse, Prüfungen und Vorlesungszeiten verwalten.', en: '– manage courses, exams, and lecture times.' },
+  'tutorial.aufgabenTitle': { de: 'Aufgaben & Termine', en: 'Tasks & Appointments' },
+  'tutorial.aufgabenDesc': { de: '– Aufgaben und feste Termine anlegen und schnell bearbeiten.', en: '– create and quick-edit tasks and fixed appointments.' },
+  'tutorial.profilTitle': { de: 'Profil & Einstellungen', en: 'Profile & Settings' },
+  'tutorial.profilDesc': { de: '– aktives Profil, Einstellungen und Backups bearbeiten.', en: '– edit your active profile, preferences, and backups.' },
+  'tutorial.chat': { de: 'Die Chat-Bubble (unten rechts) ist immer verfügbar – stelle Fragen oder beschreibe Änderungen.', en: 'The chat bubble (bottom right) is always available – ask questions or describe changes.' },
+  'tutorial.feedback': { de: 'Das Mail-Symbol (unten links) schickt Feedback an die Entwickler.', en: 'The mail icon (bottom left) sends feedback to the developers.' },
+  'tutorial.doneBtn': { de: "Verstanden, los geht's!", en: "Got it, let's go!" },
+
+  'chat.profileGreeting': { de: 'Willkommen, {name}! Dein Profil ist eingerichtet. Ich kann dir Lernsessions einplanen, Fragen zu deinem Kalender beantworten, oder Termine anlegen/verschieben/löschen – frag mich einfach.', en: 'Welcome, {name}! Your profile is set up. I can schedule learn sessions for you, answer questions about your calendar, or create/move/delete appointments – just ask.' },
 };
 
 let currentLang = localStorage.getItem('lang') || 'en';
@@ -711,6 +728,11 @@ document.getElementById('new-user-form').addEventListener('submit', async (e) =>
     await loadCourses();
     await loadTasks();
     await loadEntries();
+
+    // KI meldet sich einmal mit einer Begrüßung, nachdem das Profil steht
+    const greeting = t('chat.profileGreeting').replace('{name}', profileBody.userName || '');
+    chatPanel.classList.remove('hidden');
+    appendChatMessage('assistant', greeting);
   } catch (err) {
     showToast('Fehler beim Anlegen: ' + err.message, true);
   }
@@ -1882,6 +1904,27 @@ function renderMonthView() {
 // ---------- Init ----------
 
 applyLanguage(currentLang);
+
+// Tutorial nur beim allerersten Öffnen zeigen
+const TUTORIAL_SEEN_KEY = 'tutorialSeen';
+const tutorialModal = document.getElementById('tutorial-modal');
+
+function closeTutorial() {
+  tutorialModal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
+  localStorage.setItem(TUTORIAL_SEEN_KEY, 'true');
+}
+
+document.getElementById('close-tutorial-modal').addEventListener('click', closeTutorial);
+document.getElementById('tutorial-done-btn').addEventListener('click', closeTutorial);
+tutorialModal.addEventListener('click', (e) => {
+  if (e.target === tutorialModal) closeTutorial();
+});
+
+if (!localStorage.getItem(TUTORIAL_SEEN_KEY)) {
+  tutorialModal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
 
 (async function init() {
   try {

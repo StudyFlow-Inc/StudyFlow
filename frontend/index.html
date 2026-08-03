@@ -365,6 +365,26 @@
   </div>
 </div>
 
+<!-- POPUP: Tutorial (nur beim ersten Öffnen) -->
+<div id="tutorial-modal" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2 data-i18n="tutorial.title">Welcome to StudyFlow</h2>
+      <button type="button" id="close-tutorial-modal" class="modal-close" data-i18n-aria-label="common.close" aria-label="Close">&times;</button>
+    </div>
+    <ul class="plain-list tutorial-list">
+      <li><span class="cat-icon" aria-hidden="true">🏠</span> <span><strong data-i18n="tutorial.dashboardTitle">Dashboard</strong> <span data-i18n="tutorial.dashboardDesc">– today's appointments and open tasks at a glance.</span></span></li>
+      <li><span class="cat-icon cat-termine" aria-hidden="true">📅</span> <span><strong data-i18n="tutorial.kalenderTitle">Calendar</strong> <span data-i18n="tutorial.kalenderDesc">– week/month view, generate a study plan, or add entries via the + button.</span></span></li>
+      <li><span class="cat-icon cat-kurse" aria-hidden="true">📘</span> <span><strong data-i18n="tutorial.kurseTitle">Courses</strong> <span data-i18n="tutorial.kurseDesc">– manage courses, exams, and lecture times.</span></span></li>
+      <li><span class="cat-icon cat-tasks" aria-hidden="true">✓</span> <span><strong data-i18n="tutorial.aufgabenTitle">Tasks &amp; Appointments</strong> <span data-i18n="tutorial.aufgabenDesc">– create and quick-edit tasks and fixed appointments.</span></span></li>
+      <li><span class="nav-icon" aria-hidden="true">👤</span> <span><strong data-i18n="tutorial.profilTitle">Profile &amp; Settings</strong> <span data-i18n="tutorial.profilDesc">– edit your active profile, preferences, and backups.</span></span></li>
+      <li><span class="cat-icon cat-ki" aria-hidden="true">🤖</span> <span data-i18n="tutorial.chat">The chat bubble (bottom right) is always available – ask questions or describe changes.</span></li>
+      <li>✉️ <span data-i18n="tutorial.feedback">The mail icon (bottom left) sends feedback to the developers.</span></li>
+    </ul>
+    <button type="button" id="tutorial-done-btn" data-i18n="tutorial.doneBtn">Got it, let's go!</button>
+  </div>
+</div>
+
 <!-- POPUP: Neues Profil -->
 <div id="new-profile-modal" class="modal-overlay hidden">
   <div class="modal modal-wide">

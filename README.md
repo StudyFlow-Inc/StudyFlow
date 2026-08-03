@@ -1,15 +1,47 @@
 # StudyFlow
 
-A web application for time-based study planning for students – takes into
-account courses, exams, work shifts, commute times, and leisure appointments,
-and adjusts the study plan automatically via an AI assistant (Gemini API)
-when things change.
+A web application for time-based study planning for students. It takes into
+account courses, exams, lecture times, work shifts, commute times, and
+leisure appointments, and adjusts the study plan automatically via an AI
+assistant (Gemini API) when things change.
+
+## Features
+
+- **Profile**: field of study, semester info (type/start/end/number),
+  recurring working hours (auto-generates calendar entries), commute to
+  work/home (auto-anchored to working hours, no manual clock time needed)
+- **Courses**: workload (total, per week, or per month – auto-projected
+  using the semester end date), ECTS, priority, exam dates with time
+  (auto-added to the calendar), recurring lecture times, commute to
+  campus/home (auto-anchored to lecture times), material goal, and an
+  optional folder path for course materials
+- **Tasks & appointments**: learn sessions (tied to a course) or fixed
+  appointments, with notes, location, quick status editing, and reminders
+  (days-before popup)
+- **Calendar**: week/month view showing the full day, today and public
+  holidays (Germany, via a free API) highlighted, drag-free manual
+  editing with overlap prevention, undo for the last change
+- **Rule-based study planner**: schedules open course workload into free
+  time slots, respecting preferred study times, daily hour limits,
+  excluded weekdays, and public holidays
+- **AI assistant**: a floating chat bubble (visible everywhere except
+  while a popup is open) that can answer questions about your calendar,
+  move/create/rename/delete automatically generated entries, or plan new
+  learn sessions – every suggestion is shown for confirmation before
+  anything is written
+- **Search**: jumps directly to the matching calendar entry and briefly
+  highlights it
+- **Backup**: one-click database download from the Profile page
+- **Bilingual UI** (English default, German available) and a light/dark
+  theme toggle
+- **First-run tutorial** explaining the navigation, shown once
 
 ## Architecture
 
 - **Frontend:** plain HTML/CSS/JS, no frameworks. Sidebar navigation +
-  floating AI chat bubble (visible everywhere except while a popup is open)
-- **Backend:** Node.js + Express
+  floating AI chat bubble
+- **Backend:** Node.js + Express – now also serves the frontend as static
+  files, so both run on a single port
 - **Database:** SQLite (local file, no separate DB server needed)
 - **AI:** Google Gemini API (free tier)
 - **External API:** Nager.Date (free, no key) for German public holidays
@@ -19,25 +51,29 @@ server, each installation is independent.
 
 ```
 project/
+├── Start-StudyFlow.bat        Windows: double-click to launch
+├── Start-StudyFlow.command    macOS: double-click to launch
+├── start-studyflow.sh         Linux: run in a terminal
+├── .gitignore
 ├── backend/
-│   ├── db.js               database schema + connection
-│   ├── server.js            Express server, wires up all routes
-│   ├── scheduler.js         planning algorithm (pure logic, no DB)
-│   ├── profileCalendar.js   generates calendar entries from profile
-│   │                        working hours / commute times
-│   ├── holidays.js          cached lookup of German public holidays
-│   ├── geminiClient.js      connection to the Gemini API
-│   ├── seed.js              sample data (1 week)
-│   ├── seedMonth.js         sample data (1 month, recurring appointments)
-│   ├── .env.example         template for the Gemini API key
-│   ├── data/                SQLite file (created automatically)
+│   ├── db.js                 database schema + connection
+│   ├── server.js             Express server; serves API + frontend, opens the browser
+│   ├── scheduler.js          planning algorithm (pure logic, no DB)
+│   ├── profileCalendar.js    generates calendar entries from working hours/commute
+│   ├── holidays.js           cached lookup of German public holidays
+│   ├── geminiClient.js       connection to the Gemini API
+│   ├── seed.js               sample data (1 week)
+│   ├── seedMonth.js          sample data (1 month, recurring appointments)
+│   ├── seedSemester.js       sample data (a full semester, courses + work + sport)
+│   ├── .env.example          template for the Gemini API key
+│   ├── data/                 SQLite file (created automatically)
 │   └── routes/
-│       ├── user.js          profile, semester info, working hours, commute
-│       ├── course.js        courses, exam dates, material goal/path
-│       ├── task.js          tasks (LearnSession / FixedTask), quick status
-│       ├── calendarEntry.js CRUD + overlap check + reminders
+│       ├── user.js           profile, semester info, working hours, commute
+│       ├── course.js         courses, exam dates, lecture times, commute
+│       ├── task.js           tasks (LearnSession / FixedTask), quick status
+│       ├── calendarEntry.js  CRUD + overlap check + reminders
 │       ├── calendarChange.js change log (used by Undo)
-│       └── schedule.js      rule-based planner + AI endpoints
+│       └── schedule.js       rule-based planner + AI endpoints
 └── frontend/
     ├── index.html
     ├── style.css
@@ -48,34 +84,40 @@ project/
 
 ## Requirements
 
-- **Node.js** (LTS version), ideally installed via a version manager such
-  as [fnm](https://github.com/Schniz/fnm) so everyone on the team uses
-  the same version
-- A build toolchain for native modules (only relevant for the first
-  `npm install`):
-  - **Windows:** Visual Studio Build Tools (C++ workload)
-  - **macOS:** Xcode Command Line Tools (`xcode-select --install`)
-  - **Linux:** `build-essential`
-- A browser (for the frontend)
-- A free **Gemini API key** (see below)
+- **Node.js** (LTS version) – the only thing you need to install manually.
+  Get it from [nodejs.org](https://nodejs.org) (takes about 2 minutes)
+- A free **Gemini API key** (optional, only needed for the AI chat – see
+  below)
 - An internet connection while running (for the Gemini API and the public
   holiday lookup) – everything else works fully offline
 
 No separate SQLite installation needed – `better-sqlite3` bundles the
-engine as a native module.
+engine as a native module. No build tools needed either, as long as you
+install a current Node.js LTS release (prebuilt binaries are used).
 
-## Setup
+## Quick start (recommended)
 
-### 1. Get the repository and install packages
+1. Install Node.js once (see above)
+2. Double-click the launcher for your system:
+   - Windows: `Start-StudyFlow.bat`
+   - macOS: `Start-StudyFlow.command`
+   - Linux: run `./start-studyflow.sh` in a terminal
+3. On first run it installs dependencies automatically (only once), then
+   starts the server and opens your browser to `http://localhost:3000`
+
+That's it – no manual `npm install`, no separate frontend step.
+
+## Manual setup (alternative)
 
 ```bash
 cd backend
 npm install
+node server.js
 ```
 
-This installs `express`, `cors`, `better-sqlite3`, and `dotenv`.
+Then open `http://localhost:3000` in your browser.
 
-### 2. Set up the Gemini API key
+## Setting up the Gemini API key (for the AI chat)
 
 1. Sign in at [aistudio.google.com](https://aistudio.google.com) with a
    Google account
@@ -89,63 +131,39 @@ GEMINI_API_KEY=your-actual-key-here
 # GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-**Important:** `.env` should not go into the Git repository (add it to
-`.gitignore`), since it contains your private API key.
+**Important:** `.env` should not go into the Git repository (already
+covered by `.gitignore`), since it contains your private API key.
 
 Without a key set, the application still works – only the AI chat bubble
 will return an error instead of a result.
 
-### 3. Start the backend
+## Sample data
+
+Three seed scripts are included (run from inside `backend/`, server does
+not need to be running):
 
 ```bash
-node server.js
+node seed.js           # a single sample week
+node seedMonth.js      # a full month with recurring appointments
+node seedSemester.js   # a full semester: courses, lectures, work, sport
 ```
-
-Expected output: `Backend läuft auf http://localhost:3000`
-
-Quick test in the browser: `http://localhost:3000/api/health` should
-return `{"server":"läuft","db":"verbunden"}`.
-
-### 4. (Optional) Load sample data
-
-```bash
-node seedMonth.js
-```
-
-Creates a sample profile ("Max Mustermann") with two courses, recurring
-work/training, weekly grocery shopping, and one repairman appointment
-spread over a whole month.
-
-### 5. Open the frontend
-
-Open `frontend/index.html` in the browser (double-click works, or use
-the VS Code "Live Server" extension). The backend must be running in
-parallel. Make sure `frontend/assets/studyflow-logo.png` is present –
-it's used both as the sidebar logo and the browser tab favicon.
 
 ## Usage
 
-1. Click **"+ New Profile"** (top right) to create a profile: name, field
-   of study, semester info, working hours, and commute times (with a
-   checkbox for whether studying is possible during that commute). Working
-   hours and commute times are turned into calendar entries automatically
-2. Add **courses** (workload per week/month/total, priority, exam dates
-   with time, material goal, optional folder path)
-3. Add **tasks & appointments** – either a learn session (tied to a
-   course) or a fixed appointment
-4. In the **calendar**, use the `+` to add entries manually, or click
-   "Schedule learn sessions" to have the study plan calculated
-5. Use the floating **chat bubble** (bottom right, everywhere) to ask
-   questions ("when is my next learn session?"), describe changes
-   ("shift extended to 8pm"), or ask for new sessions/appointments to be
-   created, renamed, or deleted – each suggestion is shown for
-   confirmation before anything is written
-6. **Profile & Settings** also has a backup button (downloads the whole
-   database as a file)
+1. Click **"+ New Profile"** (top right) to create a profile
+2. Add **courses** with workload, exam dates, lecture times, and
+   optionally a commute-to-campus block
+3. Add **tasks & appointments**, or use **"Schedule learn sessions"** in
+   the calendar to auto-plan study time
+4. Use the floating **chat bubble** to ask questions, describe changes,
+   or request new sessions/appointments – confirm before anything is
+   applied
+5. **Profile & Settings** has a backup button (downloads the whole
+   database) and a delete-profile button
 
 ## Known limitations
 
-- There is no login – the "active profile" is remembered in the browser
+- No login – the "active profile" is remembered in the browser
   (`localStorage`), not protected by authentication
 - The AI chat only ever moves/creates/deletes/renames automatically
   generated entries or the one fixed appointment a change clearly refers
@@ -154,11 +172,14 @@ it's used both as the sidebar logo and the browser tab favicon.
 - The "Explorer quick access" folder icon next to a course is best-effort
   only (`file://` link) – browsers cannot open a native file explorer for
   security reasons, so this does not work in every browser
-- There is no real file upload for course material, only a text field for
-  the material goal (e.g. "20 slides/week") and an optional folder path
-  string
-- Language switching (DE/EN) covers the whole static interface, but the
-  more complex profile/preferences forms are only translated on first
-  load, not retroactively if you switch language afterwards
+- No real file upload for course material, only a text field for the
+  material goal and an optional folder path string
+- The more complex profile/preferences forms are only translated on
+  first load, not retroactively if you switch language afterwards
 - No full WCAG contrast audit has been done, only a targeted pass on the
   most visible icons/buttons
+- A truly dependency-free single-file executable (no Node.js install at
+  all) was intentionally not pursued – `better-sqlite3` is a native
+  module that bundles poorly into tools like `pkg`/Electron; the
+  double-click launcher scripts were chosen instead as the more reliable
+  low-effort option
