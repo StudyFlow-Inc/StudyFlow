@@ -1,1 +1,5 @@
 .env.example
+.db
+.db-shm
+.db-wal
+*.log
