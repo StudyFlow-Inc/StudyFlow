@@ -20,6 +20,7 @@
       <button class="nav-item active" data-view="dashboard"><span class="nav-icon" aria-hidden="true">🏠</span><span data-i18n="nav.dashboard">Dashboard</span></button>
       <button class="nav-item" data-view="kalender"><span class="nav-icon" aria-hidden="true">📅</span><span data-i18n="nav.kalender">Kalender</span></button>
       <button class="nav-item" data-view="kurse"><span class="nav-icon" aria-hidden="true">📘</span><span data-i18n="nav.kurse">Kurse</span></button>
+      <button class="nav-item" data-view="aufgaben"><span class="nav-icon" aria-hidden="true">✓</span><span data-i18n="nav.aufgaben">Aufgaben &amp; Termine</span></button>
       <button class="nav-item" data-view="ki"><span class="nav-icon" aria-hidden="true">🤖</span><span data-i18n="nav.ki">KI-Assistent</span></button>
       <button class="nav-item" data-view="profil"><span class="nav-icon" aria-hidden="true">👤</span><span data-i18n="nav.profil">Profil &amp; Einstellungen</span></button>
     </nav>
@@ -35,7 +36,8 @@
         <div id="search-results" class="search-results hidden"></div>
       </div>
       <div class="topbar-actions">
-        <div id="active-user" class="active-user empty">Kein Profil aktiv</div>
+        <button id="new-profile-btn" class="icon-btn" data-i18n="topbar.newProfile">+ Neues Profil</button>
+        <button id="active-user" class="active-user empty" type="button">Kein Profil aktiv</button>
         <button id="lang-toggle" class="icon-btn" data-i18n-title="topbar.langToggle" title="Sprache wechseln" data-i18n-aria-label="topbar.langToggle" aria-label="Sprache wechseln">DE</button>
         <button id="theme-toggle" class="icon-btn" data-i18n-title="topbar.themeToggle" title="Theme wechseln" data-i18n-aria-label="topbar.themeToggle" aria-label="Theme wechseln">🌙</button>
       </div>
@@ -71,22 +73,12 @@
       <section id="view-profil" class="view">
         <h1 class="view-title" data-i18n="nav.profil">Profil &amp; Einstellungen</h1>
         <div class="grid">
-          <div class="card">
-            <h2 data-i18n="profil.createTitle">Profil anlegen</h2>
+          <div class="card card-wide">
+            <h2 data-i18n="profil.currentTitle">Aktuelle Profil-Einstellungen</h2>
+            <p class="hint" data-i18n="profil.currentHint">Zeigt die Angaben des aktiven Profils und kann hier bearbeitet werden.</p>
             <form id="user-form">
-              <label data-i18n="profil.name">Name
-                <input type="text" id="userName" required>
-              </label>
-              <label data-i18n="profil.fieldOfStudy">Studiengang
-                <input type="text" id="fieldOfStudy">
-              </label>
-              <label data-i18n="profil.employment">Arbeit
-                <input type="text" id="employment" data-i18n-placeholder="profil.employmentPlaceholder" placeholder="z. B. Werkstudent, 15h/Woche">
-              </label>
-              <label data-i18n="profil.livingSituation">Wohnsituation
-                <input type="text" id="livingSituation" data-i18n-placeholder="profil.livingSituationPlaceholder" placeholder="z. B. WG, allein">
-              </label>
-              <button type="submit" data-i18n="profil.createBtn">Profil anlegen</button>
+              <div id="profile-fields-container"></div>
+              <button type="submit" data-i18n="common.save">Speichern</button>
             </form>
           </div>
 
@@ -99,26 +91,10 @@
             <p class="hint" data-i18n="profil.selectHint">Alle weiteren Eingaben (Kurse, Aufgaben, Kalender) beziehen sich immer auf das aktive Profil.</p>
           </div>
 
-          <div class="card">
+          <div class="card card-wide">
             <h2 data-i18n="profil.prefsTitle">Einstellungen (UserPreferences)</h2>
             <form id="preferences-form">
-              <label data-i18n="profil.preferredTimes">Bevorzugte Lernzeiten (ab)</label>
-              <div id="preferred-times-list" class="repeatable-list">
-                <div class="repeatable-row">
-                  <input type="time" class="preferredTime-input">
-                  <button type="button" class="secondary remove-time-btn" data-i18n="common.remove">Entfernen</button>
-                </div>
-              </div>
-              <button type="button" id="add-time-btn" class="secondary" data-i18n="profil.addTime">+ Uhrzeit hinzufügen</button>
-              <label data-i18n="profil.maxHoursPerDay">Max. Stunden pro Tag
-                <input type="number" id="maxHoursPerDay" step="0.5">
-              </label>
-              <label data-i18n="profil.breakDuration">Pausenlänge (Min.)
-                <input type="number" id="breakDuration">
-              </label>
-              <label data-i18n="profil.bufferBeforeExam">Puffer vor Prüfung (Tage)
-                <input type="number" id="bufferBeforeExam">
-              </label>
+              <div id="prefs-fields-container"></div>
               <button type="submit" data-i18n="profil.savePrefsBtn">Einstellungen speichern</button>
             </form>
           </div>
@@ -158,7 +134,31 @@
               <button type="submit" data-i18n="kurse.createBtn">Kurs anlegen</button>
             </form>
           </div>
+        </div>
 
+        <div class="card list-card">
+          <h2 data-i18n="nav.kurse">Kurse</h2>
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="table.name">Name</th>
+                <th data-i18n="table.ects">ECTS</th>
+                <th data-i18n="table.workload">Zeitaufwand</th>
+                <th data-i18n="table.priority">Priorität</th>
+                <th data-i18n="table.exams">Prüfungen</th>
+                <th data-i18n="table.materialGoal">Material-Ziel</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="course-list"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- AUFGABEN & TERMINE -->
+      <section id="view-aufgaben" class="view">
+        <h1 class="view-title"><span class="cat-icon cat-tasks" aria-hidden="true">✓</span> <span data-i18n="nav.aufgaben">Aufgaben &amp; Termine</span></h1>
+        <div class="grid">
           <div class="card">
             <h2><span class="cat-icon cat-tasks" aria-hidden="true">✓</span> <span data-i18n="task.addTitle">Aufgabe / Termin anlegen</span></h2>
             <form id="task-form">
@@ -206,24 +206,6 @@
               <button type="submit" data-i18n="task.createBtn">Anlegen</button>
             </form>
           </div>
-        </div>
-
-        <div class="card list-card">
-          <h2 data-i18n="nav.kurse">Kurse</h2>
-          <table>
-            <thead>
-              <tr>
-                <th data-i18n="table.name">Name</th>
-                <th data-i18n="table.ects">ECTS</th>
-                <th data-i18n="table.workload">Zeitaufwand</th>
-                <th data-i18n="table.priority">Priorität</th>
-                <th data-i18n="table.exams">Prüfungen</th>
-                <th data-i18n="table.materialGoal">Material-Ziel</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="course-list"></tbody>
-          </table>
         </div>
 
         <div class="card list-card">
@@ -302,6 +284,22 @@
       </section>
 
     </main>
+  </div>
+</div>
+
+<!-- POPUP: Neues Profil -->
+<div id="new-profile-modal" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2 data-i18n="topbar.newProfile">+ Neues Profil</h2>
+      <button type="button" id="close-new-profile-modal" class="modal-close" data-i18n-aria-label="common.close" aria-label="Schließen">&times;</button>
+    </div>
+    <form id="new-user-form">
+      <div id="new-profile-fields-container"></div>
+      <h3 data-i18n="profil.prefsTitle">Einstellungen (UserPreferences)</h3>
+      <div id="new-profile-prefs-container"></div>
+      <button type="submit" data-i18n="profil.createBtn">Profil anlegen</button>
+    </form>
   </div>
 </div>
 

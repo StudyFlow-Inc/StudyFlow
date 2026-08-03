@@ -6,6 +6,7 @@ const TRANSLATIONS = {
   'nav.dashboard': { de: 'Dashboard', en: 'Dashboard' },
   'nav.kalender': { de: 'Kalender', en: 'Calendar' },
   'nav.kurse': { de: 'Kurse', en: 'Courses' },
+  'nav.aufgaben': { de: 'Aufgaben & Termine', en: 'Tasks & Appointments' },
   'nav.ki': { de: 'KI-Assistent', en: 'AI Assistant' },
   'nav.profil': { de: 'Profil & Einstellungen', en: 'Profile & Settings' },
   'quicklink.profil': { de: 'Profil', en: 'Profile' },
@@ -17,6 +18,7 @@ const TRANSLATIONS = {
   'topbar.active': { de: 'Aktiv:', en: 'Active:' },
   'topbar.langToggle': { de: 'Sprache wechseln', en: 'Switch language' },
   'topbar.themeToggle': { de: 'Theme wechseln', en: 'Switch theme' },
+  'topbar.newProfile': { de: '+ Neues Profil', en: '+ New Profile' },
 
   'dashboard.title': { de: 'Dashboard', en: 'Dashboard' },
   'dashboard.today': { de: 'Heutige Termine', en: "Today's Appointments" },
@@ -27,6 +29,8 @@ const TRANSLATIONS = {
   'dashboard.noOpenTasks': { de: 'Keine offenen Aufgaben.', en: 'No open tasks.' },
 
   'profil.createTitle': { de: 'Profil anlegen', en: 'Create profile' },
+  'profil.currentTitle': { de: 'Aktuelle Profil-Einstellungen', en: 'Current Profile Settings' },
+  'profil.currentHint': { de: 'Zeigt die Angaben des aktiven Profils und kann hier bearbeitet werden.', en: 'Shows the active profile\u2019s details and can be edited here.' },
   'profil.name': { de: 'Name', en: 'Name' },
   'profil.fieldOfStudy': { de: 'Studiengang', en: 'Field of study' },
   'profil.employment': { de: 'Arbeit', en: 'Employment' },
@@ -34,17 +38,40 @@ const TRANSLATIONS = {
   'profil.livingSituation': { de: 'Wohnsituation', en: 'Living situation' },
   'profil.livingSituationPlaceholder': { de: 'z. B. WG, allein', en: 'e.g. shared flat, alone' },
   'profil.createBtn': { de: 'Profil anlegen', en: 'Create profile' },
+  'profil.semesterType': { de: 'Semester', en: 'Semester' },
+  'profil.semesterSummer': { de: 'Sommersemester', en: 'Summer semester' },
+  'profil.semesterWinter': { de: 'Wintersemester', en: 'Winter semester' },
+  'profil.semesterStart': { de: 'Semesterbeginn', en: 'Semester start' },
+  'profil.semesterEnd': { de: 'Semesterende', en: 'Semester end' },
+  'profil.semesterNumber': { de: 'Fachsemester (Nummer)', en: 'Semester number' },
+  'profil.workingHours': { de: 'Arbeitszeiten', en: 'Working hours' },
+  'profil.workingHoursHint': { de: 'Landet direkt als Termin im Kalender.', en: 'Goes directly into the calendar as an appointment.' },
+  'profil.addWorkingHour': { de: '+ Arbeitszeit hinzufügen', en: '+ Add working hours' },
+  'profil.commuteWork': { de: 'Pendelzeit zur Arbeit / nach Hause', en: 'Commute to work / home' },
+  'profil.commuteUni': { de: 'Pendelzeit zur Uni / nach Hause', en: 'Commute to campus / home' },
+  'profil.commuteLearnable': { de: 'In dieser Zeit kann gelernt werden', en: 'Studying is possible during this time' },
   'profil.selectTitle': { de: 'Bestehendes Profil wählen', en: 'Select existing profile' },
   'profil.selectLabel': { de: 'Profil', en: 'Profile' },
   'profil.selectBtn': { de: 'Als aktiv setzen', en: 'Set as active' },
   'profil.selectHint': { de: 'Alle weiteren Eingaben (Kurse, Aufgaben, Kalender) beziehen sich immer auf das aktive Profil.', en: 'All further entries (courses, tasks, calendar) always relate to the active profile.' },
   'profil.prefsTitle': { de: 'Einstellungen (UserPreferences)', en: 'Settings (UserPreferences)' },
-  'profil.preferredTimes': { de: 'Bevorzugte Lernzeiten (ab)', en: 'Preferred study times (from)' },
-  'profil.addTime': { de: '+ Uhrzeit hinzufügen', en: '+ Add time' },
+  'profil.preferredTimes': { de: 'Bevorzugte Lernzeiten (von/bis)', en: 'Preferred study times (from/to)' },
+  'profil.addTime': { de: '+ Zeitraum hinzufügen', en: '+ Add time range' },
+  'profil.from': { de: 'von', en: 'from' },
+  'profil.to': { de: 'bis', en: 'to' },
   'profil.maxHoursPerDay': { de: 'Max. Stunden pro Tag', en: 'Max. hours per day' },
   'profil.breakDuration': { de: 'Pausenlänge (Min.)', en: 'Break length (min.)' },
   'profil.bufferBeforeExam': { de: 'Puffer vor Prüfung (Tage)', en: 'Buffer before exam (days)' },
+  'profil.favoriteLocation': { de: 'Bevorzugter Lernort', en: 'Favorite study location' },
+  'profil.excludedWeekdays': { de: 'Tage vom Lernen ausschließen', en: 'Exclude days from studying' },
   'profil.savePrefsBtn': { de: 'Einstellungen speichern', en: 'Save settings' },
+  'weekday.mo': { de: 'Mo', en: 'Mon' },
+  'weekday.di': { de: 'Di', en: 'Tue' },
+  'weekday.mi': { de: 'Mi', en: 'Wed' },
+  'weekday.do': { de: 'Do', en: 'Thu' },
+  'weekday.fr': { de: 'Fr', en: 'Fri' },
+  'weekday.sa': { de: 'Sa', en: 'Sat' },
+  'weekday.so': { de: 'So', en: 'Sun' },
 
   'kurse.addTitle': { de: 'Kurs hinzufügen', en: 'Add course' },
   'kurse.name': { de: 'Kursname', en: 'Course name' },
@@ -293,26 +320,315 @@ applyTheme(localStorage.getItem('theme') || 'light');
 
 // ---------- User / Profil ----------
 
+// ---------- Gemeinsame Formular-Templates (Profil-Bearbeiten + Neues-Profil-Popup) ----------
+
+const WEEKDAY_OPTIONS = [
+  [1, 'weekday.mo'], [2, 'weekday.di'], [3, 'weekday.mi'], [4, 'weekday.do'],
+  [5, 'weekday.fr'], [6, 'weekday.sa'], [7, 'weekday.so'],
+];
+
+function profileFieldsTemplate(prefix) {
+  return `
+    <label>${t('profil.name')}
+      <input type="text" id="${prefix}userName" required>
+    </label>
+    <label>${t('profil.fieldOfStudy')}
+      <input type="text" id="${prefix}fieldOfStudy">
+    </label>
+    <label>${t('profil.employment')}
+      <input type="text" id="${prefix}employment" placeholder="${t('profil.employmentPlaceholder')}">
+    </label>
+    <label>${t('profil.livingSituation')}
+      <input type="text" id="${prefix}livingSituation" placeholder="${t('profil.livingSituationPlaceholder')}">
+    </label>
+    <label>${t('profil.semesterType')}
+      <select id="${prefix}semesterType">
+        <option value="Sommersemester">${t('profil.semesterSummer')}</option>
+        <option value="Wintersemester">${t('profil.semesterWinter')}</option>
+      </select>
+    </label>
+    <label>${t('profil.semesterStart')}
+      <input type="date" id="${prefix}semesterStart">
+    </label>
+    <label>${t('profil.semesterEnd')}
+      <input type="date" id="${prefix}semesterEnd">
+    </label>
+    <label>${t('profil.semesterNumber')}
+      <input type="number" id="${prefix}semesterNumber" min="1">
+    </label>
+
+    <label>${t('profil.workingHours')}</label>
+    <p class="hint">${t('profil.workingHoursHint')}</p>
+    <div id="${prefix}working-hours-list"></div>
+    <button type="button" class="secondary" data-working-hours-add="${prefix}">${t('profil.addWorkingHour')}</button>
+
+    <div class="commute-block">
+      <label>${t('profil.commuteWork')}</label>
+      <div class="weekday-checks">
+        ${WEEKDAY_OPTIONS.map(([v, key]) => `
+          <label><input type="checkbox" class="${prefix}commuteWork-day" value="${v}">${t(key)}</label>
+        `).join('')}
+      </div>
+      <div class="commute-times-row">
+        <label>${t('profil.from')}<input type="time" id="${prefix}commuteWork-start"></label>
+        <label>${t('profil.to')}<input type="time" id="${prefix}commuteWork-end"></label>
+      </div>
+      <label class="checkbox-label"><input type="checkbox" id="${prefix}commuteWork-learnable"> ${t('profil.commuteLearnable')}</label>
+    </div>
+
+    <div class="commute-block">
+      <label>${t('profil.commuteUni')}</label>
+      <div class="weekday-checks">
+        ${WEEKDAY_OPTIONS.map(([v, key]) => `
+          <label><input type="checkbox" class="${prefix}commuteUni-day" value="${v}">${t(key)}</label>
+        `).join('')}
+      </div>
+      <div class="commute-times-row">
+        <label>${t('profil.from')}<input type="time" id="${prefix}commuteUni-start"></label>
+        <label>${t('profil.to')}<input type="time" id="${prefix}commuteUni-end"></label>
+      </div>
+      <label class="checkbox-label"><input type="checkbox" id="${prefix}commuteUni-learnable"> ${t('profil.commuteLearnable')}</label>
+    </div>
+  `;
+}
+
+function preferencesFieldsTemplate(prefix) {
+  return `
+    <label>${t('profil.preferredTimes')}</label>
+    <div id="${prefix}preferred-times-list"></div>
+    <button type="button" class="secondary" data-preferred-times-add="${prefix}">${t('profil.addTime')}</button>
+
+    <label>${t('profil.maxHoursPerDay')}
+      <input type="number" id="${prefix}maxHoursPerDay" step="0.5">
+    </label>
+    <label>${t('profil.breakDuration')}
+      <input type="number" id="${prefix}breakDuration">
+    </label>
+    <label>${t('profil.bufferBeforeExam')}
+      <input type="number" id="${prefix}bufferBeforeExam">
+    </label>
+    <label>${t('profil.favoriteLocation')}
+      <input type="text" id="${prefix}favoriteLocation">
+    </label>
+    <label>${t('profil.excludedWeekdays')}</label>
+    <div class="weekday-checks">
+      ${WEEKDAY_OPTIONS.map(([v, key]) => `
+        <label><input type="checkbox" class="${prefix}excludedWeekday" value="${v}">${t(key)}</label>
+      `).join('')}
+    </div>
+  `;
+}
+
+function addWorkingHourRow(prefix, row = {}) {
+  const list = document.getElementById(`${prefix}working-hours-list`);
+  const el = document.createElement('div');
+  el.className = 'working-hours-row';
+  el.innerHTML = `
+    <select class="${prefix}workingHour-weekday">
+      ${WEEKDAY_OPTIONS.map(([v, key]) => `<option value="${v}" ${Number(row.weekday) === v ? 'selected' : ''}>${t(key)}</option>`).join('')}
+    </select>
+    <input type="time" class="${prefix}workingHour-start" value="${row.start || ''}">
+    <input type="time" class="${prefix}workingHour-end" value="${row.end || ''}">
+    <button type="button" class="secondary">${t('common.remove')}</button>
+  `;
+  el.querySelector('button').addEventListener('click', () => el.remove());
+  list.appendChild(el);
+}
+
+function addPreferredTimeRangeRow(prefix, range = {}) {
+  const list = document.getElementById(`${prefix}preferred-times-list`);
+  const el = document.createElement('div');
+  el.className = 'repeatable-row';
+  el.innerHTML = `
+    <input type="time" class="${prefix}preferredTime-from" value="${range.from || ''}" placeholder="${t('profil.from')}">
+    <input type="time" class="${prefix}preferredTime-to" value="${range.to || ''}" placeholder="${t('profil.to')}">
+    <button type="button" class="secondary">${t('common.remove')}</button>
+  `;
+  el.querySelector('button').addEventListener('click', () => {
+    if (list.children.length > 1) el.remove();
+    else { el.querySelectorAll('input').forEach(i => i.value = ''); }
+  });
+  list.appendChild(el);
+}
+
+function getProfileFieldsFromForm(prefix) {
+  const val = (id) => document.getElementById(`${prefix}${id}`)?.value || '';
+  const workingHoursRows = Array.from(document.getElementById(`${prefix}working-hours-list`).children).map(row => ({
+    weekday: Number(row.querySelector(`.${prefix}workingHour-weekday`).value),
+    start: row.querySelector(`.${prefix}workingHour-start`).value,
+    end: row.querySelector(`.${prefix}workingHour-end`).value,
+  })).filter(r => r.start && r.end);
+
+  const getCommute = (name) => ({
+    days: Array.from(document.querySelectorAll(`.${prefix}${name}-day:checked`)).map(cb => Number(cb.value)),
+    start: val(`${name}-start`),
+    end: val(`${name}-end`),
+    learnable: document.getElementById(`${prefix}${name}-learnable`)?.checked || false,
+  });
+
+  return {
+    userName: val('userName'),
+    fieldOfStudy: val('fieldOfStudy'),
+    employment: val('employment'),
+    livingSituation: val('livingSituation'),
+    semesterType: val('semesterType'),
+    semesterStart: val('semesterStart'),
+    semesterEnd: val('semesterEnd'),
+    semesterNumber: Number(val('semesterNumber')) || null,
+    workingHours: workingHoursRows,
+    commuteWork: getCommute('commuteWork'),
+    commuteUni: getCommute('commuteUni'),
+  };
+}
+
+function setProfileFieldsInForm(prefix, user) {
+  const set = (id, value) => { const el = document.getElementById(`${prefix}${id}`); if (el) el.value = value ?? ''; };
+  set('userName', user.userName);
+  set('fieldOfStudy', user.fieldOfStudy);
+  set('employment', user.employment);
+  set('livingSituation', user.livingSituation);
+  set('semesterType', user.semesterType || 'Wintersemester');
+  set('semesterStart', user.semesterStart ? user.semesterStart.slice(0, 10) : '');
+  set('semesterEnd', user.semesterEnd ? user.semesterEnd.slice(0, 10) : '');
+  set('semesterNumber', user.semesterNumber);
+
+  const list = document.getElementById(`${prefix}working-hours-list`);
+  list.innerHTML = '';
+  (user.workingHours && user.workingHours.length ? user.workingHours : []).forEach(row => addWorkingHourRow(prefix, row));
+
+  const setCommute = (name, c) => {
+    document.querySelectorAll(`.${prefix}${name}-day`).forEach(cb => {
+      cb.checked = !!(c && c.days && c.days.includes(Number(cb.value)));
+    });
+    set(`${name}-start`, c?.start);
+    set(`${name}-end`, c?.end);
+    const learnableEl = document.getElementById(`${prefix}${name}-learnable`);
+    if (learnableEl) learnableEl.checked = !!(c && c.learnable);
+  };
+  setCommute('commuteWork', user.commuteWork);
+  setCommute('commuteUni', user.commuteUni);
+}
+
+function getPreferencesFieldsFromForm(prefix) {
+  const preferredTimes = Array.from(document.getElementById(`${prefix}preferred-times-list`).children).map(row => ({
+    from: row.querySelector(`.${prefix}preferredTime-from`).value,
+    to: row.querySelector(`.${prefix}preferredTime-to`).value,
+  })).filter(r => r.from && r.to);
+
+  const excludedWeekdays = Array.from(document.querySelectorAll(`.${prefix}excludedWeekday:checked`)).map(cb => Number(cb.value));
+
+  return {
+    preferredTimes,
+    maxHoursPerDay: Number(document.getElementById(`${prefix}maxHoursPerDay`).value) || null,
+    breakDuration: Number(document.getElementById(`${prefix}breakDuration`).value) || null,
+    bufferBeforeExam: Number(document.getElementById(`${prefix}bufferBeforeExam`).value) || null,
+    favoriteLocation: document.getElementById(`${prefix}favoriteLocation`).value,
+    excludedWeekdays,
+  };
+}
+
+function setPreferencesFieldsInForm(prefix, prefs) {
+  const list = document.getElementById(`${prefix}preferred-times-list`);
+  list.innerHTML = '';
+  const times = prefs.preferredTimes && prefs.preferredTimes.length ? prefs.preferredTimes : [{}];
+  times.forEach(r => addPreferredTimeRangeRow(prefix, r));
+
+  document.getElementById(`${prefix}maxHoursPerDay`).value = prefs.maxHoursPerDay ?? '';
+  document.getElementById(`${prefix}breakDuration`).value = prefs.breakDuration ?? '';
+  document.getElementById(`${prefix}bufferBeforeExam`).value = prefs.bufferBeforeExam ?? '';
+  document.getElementById(`${prefix}favoriteLocation`).value = prefs.favoriteLocation || '';
+  document.querySelectorAll(`.${prefix}excludedWeekday`).forEach(cb => {
+    cb.checked = (prefs.excludedWeekdays || []).includes(Number(cb.value));
+  });
+}
+
+// Templates einmalig einfügen und die "+ hinzufügen"-Buttons verdrahten (delegiert, da Buttons erst nach dem Einfügen existieren)
+document.getElementById('profile-fields-container').innerHTML = profileFieldsTemplate('');
+document.getElementById('new-profile-fields-container').innerHTML = profileFieldsTemplate('new-');
+document.getElementById('prefs-fields-container').innerHTML = preferencesFieldsTemplate('');
+document.getElementById('new-profile-prefs-container').innerHTML = preferencesFieldsTemplate('new-');
+
+document.addEventListener('click', (e) => {
+  if (e.target.matches('[data-working-hours-add]')) {
+    addWorkingHourRow(e.target.dataset.workingHoursAdd);
+  }
+  if (e.target.matches('[data-preferred-times-add]')) {
+    addPreferredTimeRangeRow(e.target.dataset.preferredTimesAdd);
+  }
+});
+
+// ---------- Profil bearbeiten (aktives Profil) ----------
+
 document.getElementById('user-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!requireActiveUser()) return;
   try {
-    const body = {
-      userName: document.getElementById('userName').value,
-      fieldOfStudy: document.getElementById('fieldOfStudy').value,
-      employment: document.getElementById('employment').value,
-      livingSituation: document.getElementById('livingSituation').value,
-    };
-    const data = await api('/users', { method: 'POST', body: JSON.stringify(body) });
-    currentUserID = data.userID;
-    localStorage.setItem('currentUserID', currentUserID);
-    showToast('Profil angelegt.');
-    e.target.reset();
+    const body = getProfileFieldsFromForm('');
+    await api(`/users/${currentUserID}`, { method: 'PUT', body: JSON.stringify(body) });
+    showToast('Profil aktualisiert.');
     await loadUsers();
     await refreshActiveUserDisplay();
+    await loadEntries();
+  } catch (err) {
+    showToast('Fehler: ' + err.message, true);
+  }
+});
+
+async function loadProfileIntoForm() {
+  if (!currentUserID) return;
+  try {
+    const user = await api(`/users/${currentUserID}`);
+    setProfileFieldsInForm('', user);
+  } catch (err) {
+    showToast('Profil konnte nicht geladen werden: ' + err.message, true);
+  }
+}
+
+// ---------- Neues Profil (Popup) ----------
+
+const newProfileModal = document.getElementById('new-profile-modal');
+
+document.getElementById('new-profile-btn').addEventListener('click', () => {
+  setProfileFieldsInForm('new-', {});
+  setPreferencesFieldsInForm('new-', {});
+  newProfileModal.classList.remove('hidden');
+});
+
+function closeNewProfileModal() {
+  newProfileModal.classList.add('hidden');
+}
+
+document.getElementById('close-new-profile-modal').addEventListener('click', closeNewProfileModal);
+newProfileModal.addEventListener('click', (e) => {
+  if (e.target === newProfileModal) closeNewProfileModal();
+});
+
+document.getElementById('new-user-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    const profileBody = getProfileFieldsFromForm('new-');
+    const data = await api('/users', { method: 'POST', body: JSON.stringify(profileBody) });
+    currentUserID = data.userID;
+    localStorage.setItem('currentUserID', currentUserID);
+
+    const prefsBody = getPreferencesFieldsFromForm('new-');
+    await api(`/users/${currentUserID}/preferences`, { method: 'PUT', body: JSON.stringify(prefsBody) });
+
+    showToast('Profil angelegt.');
+    closeNewProfileModal();
+    await loadUsers();
+    await refreshActiveUserDisplay();
+    await loadProfileIntoForm();
+    await loadPreferencesIntoForm();
+    await loadCourses();
+    await loadTasks();
+    await loadEntries();
   } catch (err) {
     showToast('Fehler beim Anlegen: ' + err.message, true);
   }
 });
+
+// ---------- Bestehendes Profil auswählen ----------
 
 document.getElementById('select-user-btn').addEventListener('click', async () => {
   const select = document.getElementById('user-select');
@@ -321,11 +637,14 @@ document.getElementById('select-user-btn').addEventListener('click', async () =>
   localStorage.setItem('currentUserID', currentUserID);
   showToast('Profil aktiviert.');
   await refreshActiveUserDisplay();
+  await loadProfileIntoForm();
   await loadPreferencesIntoForm();
   await loadCourses();
   await loadTasks();
   await loadEntries();
 });
+
+document.getElementById('active-user').addEventListener('click', () => switchView('profil'));
 
 async function loadUsers() {
   const users = await api('/users');
@@ -350,63 +669,13 @@ async function refreshActiveUserDisplay() {
   }
 }
 
-// ---------- Bevorzugte Lernzeiten (mehrere Uhrzeiten) ----------
-
-function addPreferredTimeRow(value = '') {
-  const list = document.getElementById('preferred-times-list');
-  const row = document.createElement('div');
-  row.className = 'repeatable-row';
-  row.innerHTML = `
-    <input type="time" class="preferredTime-input" value="${value}">
-    <button type="button" class="secondary remove-time-btn">Entfernen</button>
-  `;
-  row.querySelector('.remove-time-btn').addEventListener('click', () => {
-    if (document.querySelectorAll('.preferredTime-input').length > 1) {
-      row.remove();
-    } else {
-      row.querySelector('input').value = '';
-    }
-  });
-  list.appendChild(row);
-}
-
-document.querySelectorAll('.remove-time-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    const row = e.target.closest('.repeatable-row');
-    if (document.querySelectorAll('.preferredTime-input').length > 1) {
-      row.remove();
-    } else {
-      row.querySelector('input').value = '';
-    }
-  });
-});
-
-document.getElementById('add-time-btn').addEventListener('click', () => addPreferredTimeRow());
-
-function getPreferredTimesFromForm() {
-  return Array.from(document.querySelectorAll('.preferredTime-input'))
-    .map(input => input.value)
-    .filter(Boolean);
-}
-
-function setPreferredTimesInForm(times) {
-  const list = document.getElementById('preferred-times-list');
-  list.innerHTML = '';
-  if (!times || times.length === 0) {
-    addPreferredTimeRow();
-    return;
-  }
-  times.forEach(t => addPreferredTimeRow(t));
-}
+// ---------- UserPreferences (aktives Profil) ----------
 
 async function loadPreferencesIntoForm() {
   if (!currentUserID) return;
   try {
     const prefs = await api(`/users/${currentUserID}/preferences`);
-    setPreferredTimesInForm(prefs.preferredTimes);
-    document.getElementById('maxHoursPerDay').value = prefs.maxHoursPerDay ?? '';
-    document.getElementById('breakDuration').value = prefs.breakDuration ?? '';
-    document.getElementById('bufferBeforeExam').value = prefs.bufferBeforeExam ?? '';
+    setPreferencesFieldsInForm('', prefs);
   } catch (err) {
     showToast('Einstellungen konnten nicht geladen werden: ' + err.message, true);
   }
@@ -416,12 +685,7 @@ document.getElementById('preferences-form').addEventListener('submit', async (e)
   e.preventDefault();
   if (!requireActiveUser()) return;
   try {
-    const body = {
-      preferredTimes: getPreferredTimesFromForm(),
-      maxHoursPerDay: Number(document.getElementById('maxHoursPerDay').value) || null,
-      breakDuration: Number(document.getElementById('breakDuration').value) || null,
-      bufferBeforeExam: Number(document.getElementById('bufferBeforeExam').value) || null,
-    };
+    const body = getPreferencesFieldsFromForm('');
     await api(`/users/${currentUserID}/preferences`, { method: 'PUT', body: JSON.stringify(body) });
     showToast('Einstellungen gespeichert.');
   } catch (err) {
@@ -900,6 +1164,7 @@ function isSameDay(a, b) {
 function eventClassFor(task) {
   if (!task) return 'event-sonstiges';
   if (task.discriminator === 'LearnSession') return 'event-kurse';
+  if (task.type === 'Pendelzeit') return 'event-pendelzeit';
   if (task.recurring === 1) return 'event-routine';
   return 'event-termin';
 }
@@ -1249,6 +1514,7 @@ applyLanguage(currentLang);
   try {
     await loadUsers();
     await refreshActiveUserDisplay();
+    await loadProfileIntoForm();
     await loadPreferencesIntoForm();
     await loadCourses();
     await loadTasks();

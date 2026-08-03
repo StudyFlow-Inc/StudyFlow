@@ -18,7 +18,14 @@ CREATE TABLE IF NOT EXISTS user (
   userName TEXT NOT NULL,
   fieldOfStudy TEXT,
   employment TEXT,
-  livingSituation TEXT
+  livingSituation TEXT,
+  semesterType TEXT,
+  semesterStart TEXT,
+  semesterEnd TEXT,
+  semesterNumber INTEGER,
+  workingHours TEXT,
+  commuteWork TEXT,
+  commuteUni TEXT
 );
 
 CREATE TABLE IF NOT EXISTS user_preferences (
@@ -26,7 +33,9 @@ CREATE TABLE IF NOT EXISTS user_preferences (
   preferredTimes TEXT,
   maxHoursPerDay REAL,
   breakDuration INTEGER,
-  bufferBeforeExam INTEGER
+  bufferBeforeExam INTEGER,
+  favoriteLocation TEXT,
+  excludedWeekdays TEXT
 );
 
 CREATE TABLE IF NOT EXISTS course (
@@ -49,7 +58,8 @@ CREATE TABLE IF NOT EXISTS task (
   discriminator TEXT NOT NULL CHECK(discriminator IN ('LearnSession','FixedTask')),
   courseID INTEGER REFERENCES course(courseID) ON DELETE CASCADE,
   type TEXT,
-  recurring INTEGER
+  recurring INTEGER,
+  learnable INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS calendar_entry (
