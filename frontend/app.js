@@ -195,7 +195,7 @@ const TRANSLATIONS = {
   'common.close': { de: 'Schließen', en: 'Close' },
 };
 
-let currentLang = localStorage.getItem('lang') || 'de';
+let currentLang = localStorage.getItem('lang') || 'en';
 
 function t(key) {
   const entry = TRANSLATIONS[key];
@@ -264,10 +264,25 @@ let lastKnownUser = null;
 
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
-  toast.textContent = message;
   toast.classList.toggle('error', isError);
+
+  if (isError) {
+    // Fehlermeldungen bleiben stehen, bis der Nutzer sie aktiv schließt -
+    // kein Auto-Dismiss, damit sie nicht "verpasst" werden können.
+    toast.innerHTML = `<span class="toast-message"></span><button type="button" class="toast-close" aria-label="Schließen">&times;</button>`;
+    toast.querySelector('.toast-message').textContent = message;
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      toast.classList.remove('show');
+    });
+  } else {
+    toast.textContent = message;
+  }
+
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+
+  if (!isError) {
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
 }
 
 async function api(path, options = {}) {
