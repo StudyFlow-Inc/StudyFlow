@@ -59,6 +59,10 @@ const TRANSLATIONS = {
   'profil.addTime': { de: '+ Zeitraum hinzufügen', en: '+ Add time range' },
   'profil.from': { de: 'von', en: 'from' },
   'profil.to': { de: 'bis', en: 'to' },
+  'profil.arrival': { de: 'Ankunft', en: 'Arrival' },
+  'profil.departure': { de: 'Abfahrt', en: 'Departure' },
+  'profil.minutesBefore': { de: 'Minuten (Hinweg)', en: 'Minutes (there)' },
+  'profil.minutesAfter': { de: 'Minuten (Rückweg)', en: 'Minutes (back)' },
   'profil.maxHoursPerDay': { de: 'Max. Stunden pro Tag', en: 'Max. hours per day' },
   'profil.breakDuration': { de: 'Pausenlänge (Min.)', en: 'Break length (min.)' },
   'profil.bufferBeforeExam': { de: 'Puffer vor Prüfung (Tage)', en: 'Buffer before exam (days)' },
@@ -388,8 +392,12 @@ function profileFieldsTemplate(prefix) {
         `).join('')}
       </div>
       <div class="commute-times-row">
-        <label>${t('profil.from')}<input type="time" id="${prefix}commuteWork-start"></label>
-        <label>${t('profil.to')}<input type="time" id="${prefix}commuteWork-end"></label>
+        <label>${t('profil.arrival')}<input type="time" id="${prefix}commuteWork-arrival"></label>
+        <label>${t('profil.departure')}<input type="time" id="${prefix}commuteWork-departure"></label>
+      </div>
+      <div class="commute-times-row">
+        <label>${t('profil.minutesBefore')}<input type="number" id="${prefix}commuteWork-minutesBefore" min="0"></label>
+        <label>${t('profil.minutesAfter')}<input type="number" id="${prefix}commuteWork-minutesAfter" min="0"></label>
       </div>
       <label class="checkbox-label"><input type="checkbox" id="${prefix}commuteWork-learnable"> ${t('profil.commuteLearnable')}</label>
     </div>
@@ -402,8 +410,12 @@ function profileFieldsTemplate(prefix) {
         `).join('')}
       </div>
       <div class="commute-times-row">
-        <label>${t('profil.from')}<input type="time" id="${prefix}commuteUni-start"></label>
-        <label>${t('profil.to')}<input type="time" id="${prefix}commuteUni-end"></label>
+        <label>${t('profil.arrival')}<input type="time" id="${prefix}commuteUni-arrival"></label>
+        <label>${t('profil.departure')}<input type="time" id="${prefix}commuteUni-departure"></label>
+      </div>
+      <div class="commute-times-row">
+        <label>${t('profil.minutesBefore')}<input type="number" id="${prefix}commuteUni-minutesBefore" min="0"></label>
+        <label>${t('profil.minutesAfter')}<input type="number" id="${prefix}commuteUni-minutesAfter" min="0"></label>
       </div>
       <label class="checkbox-label"><input type="checkbox" id="${prefix}commuteUni-learnable"> ${t('profil.commuteLearnable')}</label>
     </div>
@@ -479,8 +491,10 @@ function getProfileFieldsFromForm(prefix) {
 
   const getCommute = (name) => ({
     days: Array.from(document.querySelectorAll(`.${prefix}${name}-day:checked`)).map(cb => Number(cb.value)),
-    start: val(`${name}-start`),
-    end: val(`${name}-end`),
+    arrival: val(`${name}-arrival`),
+    departure: val(`${name}-departure`),
+    minutesBefore: Number(val(`${name}-minutesBefore`)) || 0,
+    minutesAfter: Number(val(`${name}-minutesAfter`)) || 0,
     learnable: document.getElementById(`${prefix}${name}-learnable`)?.checked || false,
   });
 
@@ -518,8 +532,10 @@ function setProfileFieldsInForm(prefix, user) {
     document.querySelectorAll(`.${prefix}${name}-day`).forEach(cb => {
       cb.checked = !!(c && c.days && c.days.includes(Number(cb.value)));
     });
-    set(`${name}-start`, c?.start);
-    set(`${name}-end`, c?.end);
+    set(`${name}-arrival`, c?.arrival);
+    set(`${name}-departure`, c?.departure);
+    set(`${name}-minutesBefore`, c?.minutesBefore);
+    set(`${name}-minutesAfter`, c?.minutesAfter);
     const learnableEl = document.getElementById(`${prefix}${name}-learnable`);
     if (learnableEl) learnableEl.checked = !!(c && c.learnable);
   };

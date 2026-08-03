@@ -22,6 +22,13 @@ function isoAt(date, timeStr) {
   return toLocalISOString(d);
 }
 
+function dateAt(date, timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const d = new Date(date);
+  d.setHours(h, m || 0, 0, 0);
+  return d;
+}
+
 function horizonEnd(semesterEnd) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -99,7 +106,8 @@ function generateWorkAndCommuteEntries(userID, { workingHours, commuteWork, comm
     }
   }
 
-  // Pendelzeiten: max. 2 Blöcke (Arbeit, Uni), je mit eigenen Wochentagen
+  // Pendelzeiten: max. 2 Blöcke (Arbeit, Uni), je mit eigenen Wochentagen.
+  // Hinweg = Ankunft minus Minuten davor, Rückweg = Abfahrt plus Minuten danach.
   const commuteBlocks = [
     { data: commuteWork, marker: MARKER_COMMUTE_WORK, label: 'Pendelzeit (Arbeit)' },
     { data: commuteUni, marker: MARKER_COMMUTE_UNI, label: 'Pendelzeit (Uni)' },
@@ -107,15 +115,28 @@ function generateWorkAndCommuteEntries(userID, { workingHours, commuteWork, comm
 
   for (const block of commuteBlocks) {
     const c = block.data;
-    if (!c || !c.start || !c.end || !Array.isArray(c.days) || c.days.length === 0) continue;
+    if (!c || !Array.isArray(c.days) || c.days.length === 0) continue;
+    const minutesBefore = Number(c.minutesBefore) || 0;
+    const minutesAfter = Number(c.minutesAfter) || 0;
+    if (!c.arrival && !c.departure) continue;
+    if (minutesBefore <= 0 && minutesAfter <= 0) continue;
 
     const learnable = c.learnable ? 1 : 0;
     const taskID = insertTask.run(block.label, block.marker, 'Pendelzeit', learnable).lastInsertRowid;
     const jsDays = c.days.map((wd) => weekdayToJsDay(Number(wd)));
 
     for (let d = new Date(today); d <= end; d.setDate(d.getDate() + 1)) {
-      if (jsDays.includes(d.getDay())) {
-        insertEntry.run(userID, taskID, isoAt(d, c.start), isoAt(d, c.end));
+      if (!jsDays.includes(d.getDay())) continue;
+
+      if (minutesBefore > 0 && c.arrival) {
+        const arrival = dateAt(d, c.arrival);
+        const start = new Date(arrival.getTime() - minutesBefore * 60_000);
+        insertEntry.run(userID, taskID, toLocalISOString(start), toLocalISOString(arrival));
+      }
+      if (minutesAfter > 0 && c.departure) {
+        const departure = dateAt(d, c.departure);
+        const end2 = new Date(departure.getTime() + minutesAfter * 60_000);
+        insertEntry.run(userID, taskID, toLocalISOString(departure), toLocalISOString(end2));
       }
     }
   }
