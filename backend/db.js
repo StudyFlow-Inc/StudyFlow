@@ -43,10 +43,12 @@ CREATE TABLE IF NOT EXISTS course (
   userID INTEGER REFERENCES user(userID) ON DELETE CASCADE,
   courseName TEXT NOT NULL,
   workload REAL,
+  workloadUnit TEXT DEFAULT 'total',
   ects INTEGER,
   priority INTEGER,
   examDates TEXT,
-  materialGoal TEXT
+  materialGoal TEXT,
+  materialPath TEXT
 );
 
 CREATE TABLE IF NOT EXISTS task (
@@ -59,7 +61,8 @@ CREATE TABLE IF NOT EXISTS task (
   courseID INTEGER REFERENCES course(courseID) ON DELETE CASCADE,
   type TEXT,
   recurring INTEGER,
-  learnable INTEGER NOT NULL DEFAULT 0
+  learnable INTEGER NOT NULL DEFAULT 0,
+  note TEXT
 );
 
 CREATE TABLE IF NOT EXISTS calendar_entry (
@@ -69,6 +72,7 @@ CREATE TABLE IF NOT EXISTS calendar_entry (
   startDateTime TEXT NOT NULL,
   endDateTime TEXT NOT NULL,
   reminder TEXT,
+  reminderDaysBefore INTEGER,
   isManual INTEGER NOT NULL DEFAULT 1
 );
 

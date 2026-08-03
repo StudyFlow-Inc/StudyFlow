@@ -6,6 +6,12 @@ router.get('/', (req, res) => {
   res.json(db.prepare('SELECT * FROM task').all());
 });
 
+router.get('/:id', (req, res) => {
+  const task = db.prepare('SELECT * FROM task WHERE taskID = ?').get(req.params.id);
+  if (!task) return res.status(404).json({ error: 'nicht gefunden' });
+  res.json(task);
+});
+
 // alle LearnSessions eines Kurses
 router.get('/course/:courseID', (req, res) => {
   res.json(
@@ -15,19 +21,26 @@ router.get('/course/:courseID', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { taskName, description, location, status, discriminator, courseID, type, recurring } = req.body;
-  const info = db.prepare(
-    `INSERT INTO task (taskName, description, location, status, discriminator, courseID, type, recurring)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).run(taskName, description, location, status, discriminator, courseID ?? null, type ?? null, recurring ?? null);
+  const { taskName, description, location, status, discriminator, courseID, type, recurring, note } = req.body;
+  const info = db.prepare(`
+    INSERT INTO task (taskName, description, location, status, discriminator, courseID, type, recurring, note)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(taskName, description, location, status, discriminator, courseID ?? null, type ?? null, recurring ?? null, note ?? null);
   res.status(201).json({ taskID: info.lastInsertRowid });
 });
 
 router.put('/:id', (req, res) => {
-  const { taskName, description, location, status } = req.body;
+  const { taskName, description, location, status, note } = req.body;
   db.prepare(
-    `UPDATE task SET taskName = ?, description = ?, location = ?, status = ? WHERE taskID = ?`
-  ).run(taskName, description, location, status, req.params.id);
+    `UPDATE task SET taskName = ?, description = ?, location = ?, status = ?, note = ? WHERE taskID = ?`
+  ).run(taskName, description, location, status, note ?? null, req.params.id);
+  res.json({ updated: true });
+});
+
+// schnelle Statusänderung (z. B. Dropdown direkt in der Liste)
+router.put('/:id/status', (req, res) => {
+  const { status } = req.body;
+  db.prepare('UPDATE task SET status = ? WHERE taskID = ?').run(status, req.params.id);
   res.json({ updated: true });
 });
 
@@ -40,15 +53,6 @@ router.put('/:id/complete', (req, res) => {
 router.delete('/:id', (req, res) => {
   db.prepare('DELETE FROM task WHERE taskID = ?').run(req.params.id);
   res.json({ deleted: true });
-});
-
-// eigener, schlanker Endpunkt zum Umbenennen (überschreibt nicht versehentlich
-// andere Felder, wie es ein vollständiges PUT ohne die übrigen Werte täte)
-router.put('/:id/rename', (req, res) => {
-  const { taskName } = req.body;
-  if (!taskName) return res.status(400).json({ error: 'taskName erforderlich' });
-  db.prepare('UPDATE task SET taskName = ? WHERE taskID = ?').run(taskName, req.params.id);
-  res.json({ renamed: true });
 });
 
 module.exports = router;

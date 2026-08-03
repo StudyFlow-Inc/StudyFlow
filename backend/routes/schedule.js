@@ -7,7 +7,9 @@ const {
   parsePreferredWindows,
   splitSlotsByPreference,
   toLocalISOString,
+  resolveCourseWorkloadHours,
 } = require('../scheduler');
+const { getHolidayDatesInRange } = require('../holidays');
 
 /**
  * POST /api/schedule/generate
@@ -26,7 +28,7 @@ const {
  *   mode: 'stretch'  -> kürzere Sessions, um den vollen Zeitraum zu nutzen
  *   mode: 'shorten'  -> kürzeren Zeitraum akzeptieren, sonst unverändert
  */
-router.post('/generate', (req, res) => {
+router.post('/generate', async (req, res) => {
   try {
     const {
       userID,
@@ -95,12 +97,13 @@ router.post('/generate', (req, res) => {
     }
 
     // 3. Kurse + offener Zeitaufwand (workload minus bereits verplanter Zeit)
+    const userRow = db.prepare('SELECT semesterEnd FROM user WHERE userID = ?').get(userID);
     const courses = db.prepare('SELECT * FROM course WHERE userID = ?').all(userID);
     const courseInputs = courses
       .map((c) => ({
         courseID: c.courseID,
         priority: c.priority || 0,
-        remainingHours: Math.max(0, (c.workload || 0) - (plannedHoursByCourse[c.courseID] || 0)),
+        remainingHours: Math.max(0, resolveCourseWorkloadHours(c, userRow?.semesterEnd) - (plannedHoursByCourse[c.courseID] || 0)),
       }))
       .filter((c) => c.remainingHours > 0);
 
@@ -141,13 +144,19 @@ router.post('/generate', (req, res) => {
       excludedWeekdays = [];
     }
 
+    const planStart = new Date();
+    const planEnd = new Date(planStart);
+    planEnd.setDate(planEnd.getDate() + days);
+    const excludedDates = await getHolidayDatesInRange(planStart, planEnd);
+
     const freeSlots = generateFreeSlots({
-      startDate: new Date(),
+      startDate: planStart,
       days,
       dayStartHour,
       dayEndHour,
       busyIntervals,
       excludedWeekdays,
+      excludedDates,
     });
 
     // 4b. Freie Slots nach bevorzugter Tageszeit umsortieren
@@ -303,11 +312,12 @@ router.post('/optimize', async (req, res) => {
       plannedHoursByCourse[row.courseID] = (plannedHoursByCourse[row.courseID] || 0) + hours;
     }
     const allCourses = db.prepare('SELECT * FROM course WHERE userID = ?').all(userID);
+    const optimizeUserRow = db.prepare('SELECT semesterEnd FROM user WHERE userID = ?').get(userID);
     const courseNameByID = new Map(allCourses.map((c) => [c.courseID, c.courseName]));
     const courses = allCourses
       .map((c) => ({
         courseName: c.courseName,
-        openHours: Math.max(0, (c.workload || 0) - (plannedHoursByCourse[c.courseID] || 0)),
+        openHours: Math.max(0, resolveCourseWorkloadHours(c, optimizeUserRow?.semesterEnd) - (plannedHoursByCourse[c.courseID] || 0)),
       }))
       .filter((c) => c.openHours > 0);
 
@@ -326,6 +336,10 @@ router.post('/optimize', async (req, res) => {
     } catch {
       optimizeExcludedWeekdays = [];
     }
+    const optimizeHorizonEnd = new Date(now);
+    optimizeHorizonEnd.setDate(optimizeHorizonEnd.getDate() + rangeDays);
+    const optimizeExcludedDates = await getHolidayDatesInRange(now, optimizeHorizonEnd);
+
     const freeSlotWindows = generateFreeSlots({
       startDate: now,
       days: rangeDays,
@@ -333,6 +347,7 @@ router.post('/optimize', async (req, res) => {
       dayEndHour: 22,
       busyIntervals,
       excludedWeekdays: optimizeExcludedWeekdays,
+      excludedDates: optimizeExcludedDates,
     }).map((s) => ({ start: toLocalISOString(s.start), end: toLocalISOString(s.end) }));
 
     const { requestRescheduleFromGemini } = require('../geminiClient');
@@ -352,6 +367,14 @@ router.post('/optimize', async (req, res) => {
       return res.json({
         needsClarification: true,
         question: result.clarifyingQuestion || 'Kannst du das genauer beschreiben?',
+        candidates: [],
+        rejected: [],
+      });
+    }
+
+    if (result.answer) {
+      return res.json({
+        answer: result.answer,
         candidates: [],
         rejected: [],
       });

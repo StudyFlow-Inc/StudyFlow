@@ -36,16 +36,16 @@ router.get('/user/:userID', (req, res) => {
 // manuell angelegter Eintrag (z. B. über das Popup) -> isManual = 1, wird beim
 // Aktualisieren des Lernplans nie automatisch gelöscht/überschrieben
 router.post('/', (req, res) => {
-  const { userID, taskID, startDateTime, endDateTime, reminder } = req.body;
+  const { userID, taskID, startDateTime, endDateTime, reminder, reminderDaysBefore } = req.body;
 
   if (hasOverlap(userID, startDateTime, endDateTime)) {
     return res.status(409).json({ error: OVERLAP_MESSAGE });
   }
 
   const info = db.prepare(`
-    INSERT INTO calendar_entry (userID, taskID, startDateTime, endDateTime, reminder, isManual)
-    VALUES (?, ?, ?, ?, ?, 1)
-  `).run(userID, taskID, startDateTime, endDateTime, reminder);
+    INSERT INTO calendar_entry (userID, taskID, startDateTime, endDateTime, reminder, reminderDaysBefore, isManual)
+    VALUES (?, ?, ?, ?, ?, ?, 1)
+  `).run(userID, taskID, startDateTime, endDateTime, reminder, reminderDaysBefore ?? null);
   res.status(201).json({ entryID: info.lastInsertRowid });
 });
 
@@ -53,7 +53,7 @@ router.post('/', (req, res) => {
 // Nutzer selbst editiert, gilt der Eintrag als "bearbeitet" (isManual = 1) und
 // wird beim nächsten Aktualisieren des Lernplans nicht mehr angetastet
 router.put('/:id', (req, res) => {
-  const { startDateTime, endDateTime, reminder } = req.body;
+  const { startDateTime, endDateTime, reminder, reminderDaysBefore } = req.body;
   const old = db.prepare('SELECT * FROM calendar_entry WHERE entryID = ?').get(req.params.id);
   if (!old) return res.status(404).json({ error: 'nicht gefunden' });
 
@@ -63,9 +63,9 @@ router.put('/:id', (req, res) => {
 
   db.prepare(`
     UPDATE calendar_entry
-    SET startDateTime = ?, endDateTime = ?, reminder = ?, isManual = 1
+    SET startDateTime = ?, endDateTime = ?, reminder = ?, reminderDaysBefore = ?, isManual = 1
     WHERE entryID = ?
-  `).run(startDateTime, endDateTime, reminder, req.params.id);
+  `).run(startDateTime, endDateTime, reminder, reminderDaysBefore ?? null, req.params.id);
 
   if (old.startDateTime !== startDateTime || old.endDateTime !== endDateTime) {
     db.prepare(`

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>StudyFlow</title>
+<link rel="icon" type="image/png" href="assets/studyflow-logo.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,7 +14,7 @@
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <span class="brand-mark">SF</span>
+      <span class="brand-mark"><img src="assets/studyflow-logo.png" alt="StudyFlow Logo"></span>
       <span class="brand-name">StudyFlow</span>
     </div>
     <nav class="side-nav" aria-label="Hauptnavigation">
@@ -21,7 +22,6 @@
       <button class="nav-item" data-view="kalender"><span class="nav-icon" aria-hidden="true">📅</span><span data-i18n="nav.kalender">Kalender</span></button>
       <button class="nav-item" data-view="kurse"><span class="nav-icon" aria-hidden="true">📘</span><span data-i18n="nav.kurse">Kurse</span></button>
       <button class="nav-item" data-view="aufgaben"><span class="nav-icon" aria-hidden="true">✓</span><span data-i18n="nav.aufgaben">Aufgaben &amp; Termine</span></button>
-      <button class="nav-item" data-view="ki"><span class="nav-icon" aria-hidden="true">🤖</span><span data-i18n="nav.ki">KI-Assistent</span></button>
       <button class="nav-item" data-view="profil"><span class="nav-icon" aria-hidden="true">👤</span><span data-i18n="nav.profil">Profil &amp; Einstellungen</span></button>
     </nav>
   </aside>
@@ -91,6 +91,14 @@
             <p class="hint" data-i18n="profil.selectHint">Alle weiteren Eingaben (Kurse, Aufgaben, Kalender) beziehen sich immer auf das aktive Profil.</p>
           </div>
 
+          <div class="card">
+            <h2 data-i18n="profil.backupTitle">Backup</h2>
+            <p class="hint" data-i18n="profil.backupHint">Lädt die komplette Datenbank als Datei herunter.</p>
+            <a id="backup-btn" href="http://localhost:3000/api/backup" download>
+              <button type="button" data-i18n="profil.backupBtn">Datenbank herunterladen</button>
+            </a>
+          </div>
+
           <div class="card card-wide">
             <h2 data-i18n="profil.prefsTitle">Einstellungen (UserPreferences)</h2>
             <form id="preferences-form">
@@ -106,24 +114,32 @@
         <h1 class="view-title"><span class="cat-icon cat-kurse" aria-hidden="true">📘</span> <span data-i18n="nav.kurse">Kurse</span></h1>
         <div class="grid">
           <div class="card">
-            <h2 data-i18n="kurse.addTitle">Kurs hinzufügen</h2>
+            <h2 id="course-form-title" data-i18n="kurse.addTitle">Kurs hinzufügen</h2>
             <form id="course-form">
               <label data-i18n="kurse.name">Kursname
                 <input type="text" id="courseName" required>
               </label>
-              <label data-i18n="kurse.workload">Zeitaufwand gesamt (Std.)
+              <label data-i18n="kurse.workload">Zeitaufwand
                 <input type="number" id="workload" step="0.5">
               </label>
+              <label data-i18n="kurse.workloadUnit">Angabe pro
+                <select id="workloadUnit">
+                  <option value="total" data-i18n="kurse.workloadTotal">Insgesamt</option>
+                  <option value="week" data-i18n="kurse.workloadWeek">Woche</option>
+                  <option value="month" data-i18n="kurse.workloadMonth">Monat</option>
+                </select>
+              </label>
+              <p class="hint" data-i18n="kurse.workloadHint">Bei Woche/Monat wird der Gesamtaufwand anhand des Semesterendes (Profil) automatisch hochgerechnet.</p>
               <label data-i18n="kurse.ects">ECTS
                 <input type="number" id="ects">
               </label>
               <label data-i18n="kurse.priority">Priorität (1 = niedrig, 5 = hoch)
                 <input type="number" id="priority" min="1" max="5">
               </label>
-              <label data-i18n="kurse.examDates">Prüfungstermine</label>
+              <label data-i18n="kurse.examDates">Prüfungstermine (Datum + Uhrzeit)</label>
               <div id="exam-dates-list" class="repeatable-list">
                 <div class="repeatable-row">
-                  <input type="date" class="examDate-input">
+                  <input type="datetime-local" class="examDate-input">
                   <button type="button" class="secondary remove-exam-date-btn" data-i18n="common.remove">Entfernen</button>
                 </div>
               </div>
@@ -131,7 +147,10 @@
               <label data-i18n="kurse.materialGoal">Kursmaterial-Ziel (z. B. "20 Folien/Woche")
                 <input type="text" id="materialGoal" data-i18n-placeholder="kurse.materialGoalPlaceholder" placeholder="z. B. 20 Folien/Woche">
               </label>
-              <button type="submit" data-i18n="kurse.createBtn">Kurs anlegen</button>
+              <label data-i18n="kurse.materialPath">Ordnerpfad der Kurs-Unterlagen</label>
+              <p class="hint" data-i18n="kurse.materialPathHint">Browser können aus Sicherheitsgründen keinen Datei-Explorer öffnen - der Link versucht es best-effort über file://, funktioniert aber nicht in jedem Browser.</p>
+              <input type="text" id="materialPath" placeholder="z. B. C:\Users\Name\Dokumente\Kurs">
+              <button type="submit" id="course-form-submit-btn" data-i18n="kurse.createBtn">Kurs anlegen</button>
             </form>
           </div>
         </div>
@@ -160,7 +179,7 @@
         <h1 class="view-title"><span class="cat-icon cat-tasks" aria-hidden="true">✓</span> <span data-i18n="nav.aufgaben">Aufgaben &amp; Termine</span></h1>
         <div class="grid">
           <div class="card">
-            <h2><span class="cat-icon cat-tasks" aria-hidden="true">✓</span> <span data-i18n="task.addTitle">Aufgabe / Termin anlegen</span></h2>
+            <h2><span class="cat-icon cat-tasks" aria-hidden="true">✓</span> <span id="task-form-title" data-i18n="task.addTitle">Aufgabe / Termin anlegen</span></h2>
             <form id="task-form">
               <label data-i18n="task.type">Typ
                 <select id="discriminator">
@@ -184,6 +203,9 @@
                   <option value="erledigt" data-i18n="task.statusDone">erledigt</option>
                 </select>
               </label>
+              <label data-i18n="task.note">Notiz
+                <textarea id="task-note" rows="2"></textarea>
+              </label>
               <div id="learnsession-fields" class="conditional-fields">
                 <label data-i18n="task.course">Zugehöriger Kurs
                   <select id="task-course"></select>
@@ -203,7 +225,7 @@
                   <span data-i18n="task.recurring">wiederkehrend (Routine ♻)</span>
                 </label>
               </div>
-              <button type="submit" data-i18n="task.createBtn">Anlegen</button>
+              <button type="submit" id="task-form-submit-btn" data-i18n="task.createBtn">Anlegen</button>
             </form>
           </div>
         </div>
@@ -265,25 +287,51 @@
         </div>
       </section>
 
-      <!-- KI-ASSISTENT -->
-      <section id="view-ki" class="view">
-        <h1 class="view-title"><span class="cat-icon cat-ki" aria-hidden="true">🤖</span> <span data-i18n="nav.ki">KI-Assistent</span></h1>
-        <div class="card chat-card">
-          <div id="chat-log" class="chat-log">
-            <div class="chat-msg assistant">
-              <span class="chat-avatar" aria-hidden="true">🤖</span>
-              <div class="chat-bubble" data-i18n="chat.welcome">Hallo! Beschreibe eine Änderung (z. B. "Schicht am Montag bis 20 Uhr verlängert"), bitte um neue Lernsessions, oder lass mich einen Termin umbenennen bzw. löschen. Ich beziehe mich dabei immer auf den aktuell im Kalender angezeigten Zeitraum – in der Monatsansicht bitte einen konkreten Tag nennen.</div>
-            </div>
-          </div>
-          <form id="optimize-form" class="chat-input-row">
-            <label class="visually-hidden" for="change-description" data-i18n="chat.inputLabel">Nachricht an den KI-Assistenten</label>
-            <input type="text" id="change-description" data-i18n-placeholder="chat.inputPlaceholder" placeholder="Nachricht eingeben…" required>
-            <button type="submit" data-i18n="chat.send">Senden</button>
-          </form>
-        </div>
-      </section>
-
     </main>
+  </div>
+</div>
+
+<!-- Schwebender KI-Chat: überall sichtbar außer wenn ein Popup offen ist -->
+<div id="chat-widget">
+  <button id="chat-bubble-toggle" class="chat-bubble-toggle" data-i18n-aria-label="chat.toggle" aria-label="KI-Assistent öffnen">🤖</button>
+  <div id="chat-panel" class="chat-panel hidden">
+    <div class="chat-panel-header">
+      <span><span class="cat-icon cat-ki" aria-hidden="true">🤖</span> <span data-i18n="nav.ki">KI-Assistent</span></span>
+      <button type="button" id="chat-panel-close" class="modal-close" data-i18n-aria-label="common.close" aria-label="Schließen">&times;</button>
+    </div>
+    <div id="chat-log" class="chat-log">
+      <div class="chat-msg assistant">
+        <span class="chat-avatar" aria-hidden="true">🤖</span>
+        <div class="chat-bubble" data-i18n="chat.welcome">Hallo! Beschreibe eine Änderung (z. B. "Schicht am Montag bis 20 Uhr verlängert"), bitte um neue Lernsessions, frag mich etwas zum Kalender, oder lass mich einen Termin umbenennen bzw. löschen.</div>
+      </div>
+    </div>
+    <form id="optimize-form" class="chat-input-row">
+      <label class="visually-hidden" for="change-description" data-i18n="chat.inputLabel">Nachricht an den KI-Assistenten</label>
+      <input type="text" id="change-description" data-i18n-placeholder="chat.inputPlaceholder" placeholder="Nachricht eingeben…" required>
+      <button type="submit" data-i18n="chat.send">Senden</button>
+    </form>
+  </div>
+</div>
+
+<!-- Persistentes Feedback-Mail-Symbol -->
+<a
+  id="feedback-mail-btn"
+  class="feedback-mail-btn"
+  href="mailto:feedback@studyflow.example?subject=StudyFlow%20Feedback"
+  data-i18n-title="feedback.mailTitle"
+  title="Feedback per E-Mail senden"
+  data-i18n-aria-label="feedback.mailTitle"
+  aria-label="Feedback per E-Mail senden"
+>✉️</a>
+
+<!-- POPUP: Fällige Erinnerungen -->
+<div id="reminder-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 data-i18n="reminder.title">Erinnerungen</h2>
+      <button type="button" id="close-reminder-modal" class="modal-close" data-i18n-aria-label="common.close" aria-label="Schließen">&times;</button>
+    </div>
+    <ul id="reminder-list" class="plain-list"></ul>
   </div>
 </div>
 
@@ -323,6 +371,9 @@
       <label data-i18n="entryModal.reminder">Erinnerung
         <input type="text" id="reminder" data-i18n-placeholder="entryModal.reminderPlaceholder" placeholder="z. B. 30 Min. vorher">
       </label>
+      <label data-i18n="entryModal.reminderDays">Erinnerungs-Pop-Up (Tage vorher)
+        <input type="number" id="reminderDaysBefore" min="0">
+      </label>
       <button type="submit" data-i18n="entryModal.createBtn">Eintrag anlegen</button>
     </form>
   </div>
@@ -348,6 +399,16 @@
       </label>
       <label data-i18n="entryModal.reminder">Erinnerung
         <input type="text" id="edit-reminder">
+      </label>
+      <label data-i18n="entryModal.reminderDays">Erinnerungs-Pop-Up (Tage vorher)
+        <input type="number" id="edit-reminderDaysBefore" min="0">
+      </label>
+      <label data-i18n="task.status">Status
+        <select id="edit-taskStatus">
+          <option value="offen" data-i18n="task.statusOpen">offen</option>
+          <option value="in Bearbeitung" data-i18n="task.statusInProgress">in Bearbeitung</option>
+          <option value="erledigt" data-i18n="task.statusDone">erledigt</option>
+        </select>
       </label>
       <div class="modal-actions">
         <button type="submit" data-i18n="common.save">Speichern</button>
