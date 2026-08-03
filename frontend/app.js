@@ -39,6 +39,7 @@ const TRANSLATIONS = {
   'profil.livingSituationPlaceholder': { de: 'z. B. WG, allein', en: 'e.g. shared flat, alone' },
   'profil.createBtn': { de: 'Profil anlegen', en: 'Create profile' },
   'profil.semesterType': { de: 'Semester', en: 'Semester' },
+  'profil.semesterGroupTitle': { de: 'Semester', en: 'Semester' },
   'profil.semesterSummer': { de: 'Sommersemester', en: 'Summer semester' },
   'profil.semesterWinter': { de: 'Wintersemester', en: 'Winter semester' },
   'profil.semesterStart': { de: 'Semesterbeginn', en: 'Semester start' },
@@ -93,6 +94,7 @@ const TRANSLATIONS = {
   'kurse.updateBtn': { de: 'Kurs aktualisieren', en: 'Update course' },
   'kurse.name': { de: 'Kursname', en: 'Course name' },
   'kurse.workload': { de: 'Zeitaufwand gesamt (Std.)', en: 'Total workload (hrs)' },
+  'kurse.workloadGroupTitle': { de: 'Zeitaufwand', en: 'Workload' },
   'kurse.ects': { de: 'ECTS', en: 'ECTS' },
   'kurse.priority': { de: 'Priorität (1 = niedrig, 5 = hoch)', en: 'Priority (1 = low, 5 = high)' },
   'kurse.examDates': { de: 'Prüfungstermine', en: 'Exam dates' },
@@ -364,26 +366,31 @@ function profileFieldsTemplate(prefix) {
     <label>${t('profil.fieldOfStudy')}
       <input type="text" id="${prefix}fieldOfStudy">
     </label>
+
+    <div class="field-group">
+      <p class="field-group-title">${t('profil.semesterGroupTitle')}</p>
+      <label>${t('profil.semesterType')}
+        <select id="${prefix}semesterType">
+          <option value="Sommersemester">${t('profil.semesterSummer')}</option>
+          <option value="Wintersemester">${t('profil.semesterWinter')}</option>
+        </select>
+      </label>
+      <label>${t('profil.semesterStart')}
+        <input type="date" id="${prefix}semesterStart">
+      </label>
+      <label>${t('profil.semesterEnd')}
+        <input type="date" id="${prefix}semesterEnd">
+      </label>
+      <label>${t('profil.semesterNumber')}
+        <input type="number" id="${prefix}semesterNumber" min="1">
+      </label>
+    </div>
+
     <label>${t('profil.employment')}
       <input type="text" id="${prefix}employment" placeholder="${t('profil.employmentPlaceholder')}">
     </label>
     <label>${t('profil.livingSituation')}
       <input type="text" id="${prefix}livingSituation" placeholder="${t('profil.livingSituationPlaceholder')}">
-    </label>
-    <label>${t('profil.semesterType')}
-      <select id="${prefix}semesterType">
-        <option value="Sommersemester">${t('profil.semesterSummer')}</option>
-        <option value="Wintersemester">${t('profil.semesterWinter')}</option>
-      </select>
-    </label>
-    <label>${t('profil.semesterStart')}
-      <input type="date" id="${prefix}semesterStart">
-    </label>
-    <label>${t('profil.semesterEnd')}
-      <input type="date" id="${prefix}semesterEnd">
-    </label>
-    <label>${t('profil.semesterNumber')}
-      <input type="number" id="${prefix}semesterNumber" min="1">
     </label>
 
     <label>${t('profil.workingHours')}</label>

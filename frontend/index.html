@@ -122,17 +122,20 @@
               <label data-i18n="kurse.name">Kursname
                 <input type="text" id="courseName" required>
               </label>
-              <label data-i18n="kurse.workload">Zeitaufwand
-                <input type="number" id="workload" step="0.5">
-              </label>
-              <label data-i18n="kurse.workloadUnit">Angabe pro
-                <select id="workloadUnit">
-                  <option value="total" data-i18n="kurse.workloadTotal">Insgesamt</option>
-                  <option value="week" data-i18n="kurse.workloadWeek">Woche</option>
-                  <option value="month" data-i18n="kurse.workloadMonth">Monat</option>
-                </select>
-              </label>
-              <p class="hint" data-i18n="kurse.workloadHint">Bei Woche/Monat wird der Gesamtaufwand anhand des Semesterendes (Profil) automatisch hochgerechnet.</p>
+              <div class="field-group">
+                <p class="field-group-title" data-i18n="kurse.workloadGroupTitle">Zeitaufwand</p>
+                <label data-i18n="kurse.workload">Zeitaufwand
+                  <input type="number" id="workload" step="0.5">
+                </label>
+                <label data-i18n="kurse.workloadUnit">Angabe pro
+                  <select id="workloadUnit">
+                    <option value="total" data-i18n="kurse.workloadTotal">Insgesamt</option>
+                    <option value="week" data-i18n="kurse.workloadWeek">Woche</option>
+                    <option value="month" data-i18n="kurse.workloadMonth">Monat</option>
+                  </select>
+                </label>
+                <p class="hint" data-i18n="kurse.workloadHint">Bei Woche/Monat wird der Gesamtaufwand anhand des Semesterendes (Profil) automatisch hochgerechnet.</p>
+              </div>
               <label data-i18n="kurse.ects">ECTS
                 <input type="number" id="ects">
               </label>

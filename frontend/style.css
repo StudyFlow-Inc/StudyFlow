@@ -357,6 +357,12 @@ main {
   grid-column: 1 / -1;
 }
 
+#select-user-btn,
+#backup-btn {
+  margin-top: 0.75rem;
+  display: inline-block;
+}
+
 .card h2 {
   margin-top: 0;
   font-size: 1.05rem;
@@ -676,11 +682,26 @@ button.secondary:hover { background: var(--surface-2); }
 }
 
 .working-hours-row,
-.commute-block {
+.commute-block,
+.field-group {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.6rem;
   margin-bottom: 0.5rem;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.field-group-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0;
 }
 
 .working-hours-row {
