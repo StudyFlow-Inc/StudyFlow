@@ -262,6 +262,9 @@ a, button {
   color: var(--cat-routinen);
   font-weight: 600;
   white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .active-user.empty {
@@ -336,6 +339,10 @@ main {
   border-radius: var(--radius);
   padding: 1.25rem;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.card-wide {
+  grid-column: 1 / -1;
 }
 
 .card h2 {
@@ -602,6 +609,59 @@ button.secondary:hover { background: var(--surface-2); }
 .event-routine { background: var(--cat-routinen); }
 .event-termin, .event-sonstiges { background: var(--cat-termine); }
 
+/* Pendelzeit (commute): hellgrau + kursiv, bewusst zurückhaltender als die
+   Kategorie-Farben, da es sich um Rahmenzeit handelt, nicht um einen
+   klassifizierten Termin */
+.event-pendelzeit {
+  background: #b9bcc3;
+  color: #33363d;
+  font-style: italic;
+}
+[data-theme="dark"] .event-pendelzeit {
+  background: #4a4d54;
+  color: #d8dade;
+}
+
+.working-hours-row,
+.commute-block {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.working-hours-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.working-hours-row select,
+.working-hours-row input[type="time"] {
+  flex: 1;
+  min-width: 90px;
+}
+
+.weekday-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+.weekday-checks label {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.commute-times-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.commute-times-row label { flex: 1; }
+
 /* ===== Modal ===== */
 
 .add-fab {
@@ -632,6 +692,12 @@ button.secondary:hover { background: var(--surface-2); }
   width: 100%;
   max-width: 360px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+
+.modal-wide {
+  max-width: 640px;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 .modal-header {
   display: flex;

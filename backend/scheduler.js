@@ -10,12 +10,22 @@
  * Tagesraster (dayStartHour–dayEndHour) abzüglich bereits belegter
  * Intervalle (z. B. FixedTask-Termine wie Arbeit/Vorlesung).
  */
-function generateFreeSlots({ startDate, days, dayStartHour, dayEndHour, busyIntervals }) {
+/**
+ * Berechnet freie Zeitfenster über mehrere Tage, ausgehend von einem
+ * Tagesraster (dayStartHour–dayEndHour) abzüglich bereits belegter
+ * Intervalle (z. B. FixedTask-Termine wie Arbeit/Vorlesung).
+ * excludedWeekdays: Array von 1 (Montag) bis 7 (Sonntag) - diese Tage
+ * werden komplett übersprungen (keine Lernzeit an diesen Tagen).
+ */
+function generateFreeSlots({ startDate, days, dayStartHour, dayEndHour, busyIntervals, excludedWeekdays = [] }) {
   const slots = [];
+  const excludedJsDays = new Set(excludedWeekdays.map((wd) => Number(wd) % 7));
 
   for (let d = 0; d < days; d++) {
     const day = new Date(startDate);
     day.setDate(day.getDate() + d);
+
+    if (excludedJsDays.has(day.getDay())) continue;
 
     const dayStart = new Date(day);
     dayStart.setHours(dayStartHour, 0, 0, 0);
@@ -99,24 +109,37 @@ function allocateSessions({ freeSlots, courses, chunkHours = 2, breakMinutes = 1
  * dieser Zeit. Liefert ein leeres Array, wenn nichts auswertbar ist –
  * dann wird rein chronologisch geplant.
  */
-function parsePreferredWindows(preferredTimes, dayStartHour, dayEndHour, windowHours = 3) {
+/**
+ * Übersetzt UserPreferences.preferredTimes (JSON-Array von {from, to}
+ * Zeit-Spannen, z. B. '[{"from":"08:00","to":"10:00"}]') in Stunden-Spannen.
+ * Liefert ein leeres Array, wenn nichts auswertbar ist – dann wird rein
+ * chronologisch geplant.
+ */
+function parsePreferredWindows(preferredTimes, dayStartHour, dayEndHour) {
   if (!preferredTimes) return [];
 
-  let times;
+  let ranges;
   try {
-    times = typeof preferredTimes === 'string' ? JSON.parse(preferredTimes) : preferredTimes;
+    ranges = typeof preferredTimes === 'string' ? JSON.parse(preferredTimes) : preferredTimes;
   } catch {
-    times = [preferredTimes]; // Abwärtskompatibilität: einzelner String statt JSON-Array
+    ranges = [];
   }
-  if (!Array.isArray(times)) times = [times];
+  if (!Array.isArray(ranges)) ranges = [ranges];
+
+  const toHour = (str) => {
+    const match = String(str || '').trim().match(/^(\d{1,2}):?(\d{2})?$/);
+    if (!match) return null;
+    return Number(match[1]) + (match[2] ? Number(match[2]) / 60 : 0);
+  };
 
   const windows = [];
-  for (const t of times) {
-    const match = String(t).trim().match(/^(\d{1,2})(?::(\d{2}))?$/);
-    if (!match) continue;
-    const startHour = Number(match[1]) + (match[2] ? Number(match[2]) / 60 : 0);
-    const clampedStart = Math.max(startHour, dayStartHour);
-    const clampedEnd = Math.min(startHour + windowHours, dayEndHour);
+  for (const r of ranges) {
+    if (!r) continue;
+    const fromHour = toHour(r.from);
+    const toHourVal = toHour(r.to);
+    if (fromHour == null || toHourVal == null) continue;
+    const clampedStart = Math.max(fromHour, dayStartHour);
+    const clampedEnd = Math.min(toHourVal, dayEndHour);
     if (clampedStart < clampedEnd) windows.push({ startHour: clampedStart, endHour: clampedEnd });
   }
   return windows;

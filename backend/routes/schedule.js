@@ -63,12 +63,15 @@ router.post('/generate', (req, res) => {
     // 1. Belegte Zeiten = FixedTask-Termine UND alle manuellen/bearbeiteten
     // Einträge (auch LearnSessions, die der Nutzer selbst gesetzt hat) -
     // beides darf von der Neuberechnung nicht überschrieben werden.
+    // Ausnahme: Pendelzeiten, die als "lernfähig" markiert sind (learnable=1),
+    // gelten NICHT als belegt - dort darf der Algorithmus Lernzeit einplanen.
     const busyRows = db.prepare(`
       SELECT ce.startDateTime, ce.endDateTime
       FROM calendar_entry ce
       JOIN task t ON t.taskID = ce.taskID
       WHERE ce.userID = ?
         AND (t.discriminator = 'FixedTask' OR ce.isManual = 1)
+        AND NOT (t.discriminator = 'FixedTask' AND t.learnable = 1)
     `).all(userID);
 
     const busyIntervals = busyRows.map((r) => ({
@@ -131,12 +134,20 @@ router.post('/generate', (req, res) => {
     }
 
     // 4. Freie Zeitfenster berechnen (abzüglich FixedTask + manueller Einträge)
+    let excludedWeekdays = [];
+    try {
+      excludedWeekdays = prefs.excludedWeekdays ? JSON.parse(prefs.excludedWeekdays) : [];
+    } catch {
+      excludedWeekdays = [];
+    }
+
     const freeSlots = generateFreeSlots({
       startDate: new Date(),
       days,
       dayStartHour,
       dayEndHour,
       busyIntervals,
+      excludedWeekdays,
     });
 
     // 4b. Freie Slots nach bevorzugter Tageszeit umsortieren
@@ -253,7 +264,7 @@ router.post('/optimize', async (req, res) => {
     // ALLE Termine im Zeitraum holen - FixedTask + LearnSession
     const rows = db.prepare(`
       SELECT ce.entryID, ce.startDateTime, ce.endDateTime, ce.isManual, ce.taskID,
-             t.discriminator, t.taskName
+             t.discriminator, t.taskName, t.learnable
       FROM calendar_entry ce
       JOIN task t ON t.taskID = ce.taskID
       WHERE ce.userID = ?
@@ -300,18 +311,28 @@ router.post('/optimize', async (req, res) => {
       }))
       .filter((c) => c.openHours > 0);
 
-    // Freie Zeitfenster berechnen (abzüglich aller bestehenden Termine),
-    // damit die KI neue Sessions nur dort platzieren kann
-    const busyIntervals = rows.map((r) => ({
-      start: new Date(r.startDateTime),
-      end: new Date(r.endDateTime),
-    }));
+    // Freie Zeitfenster berechnen (abzüglich aller bestehenden Termine, außer
+    // als "lernfähig" markierten Pendelzeiten), damit die KI neue Sessions
+    // nur dort platzieren kann
+    const busyIntervals = rows
+      .filter((r) => !(r.discriminator === 'FixedTask' && r.learnable === 1))
+      .map((r) => ({
+        start: new Date(r.startDateTime),
+        end: new Date(r.endDateTime),
+      }));
+    let optimizeExcludedWeekdays = [];
+    try {
+      optimizeExcludedWeekdays = prefs.excludedWeekdays ? JSON.parse(prefs.excludedWeekdays) : [];
+    } catch {
+      optimizeExcludedWeekdays = [];
+    }
     const freeSlotWindows = generateFreeSlots({
       startDate: now,
       days: rangeDays,
       dayStartHour: 8,
       dayEndHour: 22,
       busyIntervals,
+      excludedWeekdays: optimizeExcludedWeekdays,
     }).map((s) => ({ start: toLocalISOString(s.start), end: toLocalISOString(s.end) }));
 
     const { requestRescheduleFromGemini } = require('../geminiClient');
