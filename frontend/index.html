@@ -78,7 +78,10 @@
             <p class="hint" data-i18n="profil.currentHint">Zeigt die Angaben des aktiven Profils und kann hier bearbeitet werden.</p>
             <form id="user-form">
               <div id="profile-fields-container"></div>
-              <button type="submit" data-i18n="common.save">Speichern</button>
+              <div class="modal-actions">
+                <button type="submit" data-i18n="common.save">Speichern</button>
+                <button type="button" id="delete-profile-btn" class="secondary" data-i18n="profil.deleteBtn">Profil löschen</button>
+              </div>
             </form>
           </div>
 
@@ -150,6 +153,30 @@
               <label data-i18n="kurse.materialPath">Ordnerpfad der Kurs-Unterlagen</label>
               <p class="hint" data-i18n="kurse.materialPathHint">Browser können aus Sicherheitsgründen keinen Datei-Explorer öffnen - der Link versucht es best-effort über file://, funktioniert aber nicht in jedem Browser.</p>
               <input type="text" id="materialPath" placeholder="z. B. C:\Users\Name\Dokumente\Kurs">
+
+              <label data-i18n="kurse.lectureTimes">Vorlesungszeiten</label>
+              <div id="lecture-times-list"></div>
+              <button type="button" class="secondary" id="add-lecture-time-btn" data-i18n="kurse.addLectureTime">+ Vorlesungszeit hinzufügen</button>
+
+              <div class="commute-block">
+                <label data-i18n="kurse.commuteUni">Pendelzeit zur Uni / nach Hause</label>
+                <div class="weekday-checks">
+                  <label><input type="checkbox" class="commuteUni-day" value="1"><span data-i18n="weekday.mo">Mo</span></label>
+                  <label><input type="checkbox" class="commuteUni-day" value="2"><span data-i18n="weekday.di">Di</span></label>
+                  <label><input type="checkbox" class="commuteUni-day" value="3"><span data-i18n="weekday.mi">Mi</span></label>
+                  <label><input type="checkbox" class="commuteUni-day" value="4"><span data-i18n="weekday.do">Do</span></label>
+                  <label><input type="checkbox" class="commuteUni-day" value="5"><span data-i18n="weekday.fr">Fr</span></label>
+                  <label><input type="checkbox" class="commuteUni-day" value="6"><span data-i18n="weekday.sa">Sa</span></label>
+                  <label><input type="checkbox" class="commuteUni-day" value="7"><span data-i18n="weekday.so">So</span></label>
+                </div>
+                <p class="hint" data-i18n="kurse.commuteUniHint">Hinweg endet automatisch am Beginn der jeweiligen Vorlesung, Rückweg beginnt an deren Ende.</p>
+                <div class="commute-times-row">
+                  <label data-i18n="profil.minutesBefore">Minuten (Hinweg)<input type="number" id="commuteUni-minutesBefore" min="0"></label>
+                  <label data-i18n="profil.minutesAfter">Minuten (Rückweg)<input type="number" id="commuteUni-minutesAfter" min="0"></label>
+                </div>
+                <label class="checkbox-label"><input type="checkbox" id="commuteUni-learnable"> <span data-i18n="profil.commuteLearnable">In dieser Zeit kann gelernt werden</span></label>
+              </div>
+
               <button type="submit" id="course-form-submit-btn" data-i18n="kurse.createBtn">Kurs anlegen</button>
             </form>
           </div>

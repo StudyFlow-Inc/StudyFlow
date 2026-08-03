@@ -6,20 +6,12 @@ const { toLocalISOString } = require('./scheduler');
 // Arbeits-/Pendelzeit-Termine des Users anzufassen.
 const MARKER_WORK = '__profile_work__';
 const MARKER_COMMUTE_WORK = '__profile_commute_work__';
-const MARKER_COMMUTE_UNI = '__profile_commute_uni__';
 
 const DEFAULT_HORIZON_DAYS = 90;
 
 function weekdayToJsDay(weekday) {
   // weekday: 1=Montag ... 7=Sonntag  ->  JS: 0=Sonntag ... 6=Samstag
   return weekday % 7;
-}
-
-function isoAt(date, timeStr) {
-  const [h, m] = timeStr.split(':').map(Number);
-  const d = new Date(date);
-  d.setHours(h, m || 0, 0, 0);
-  return toLocalISOString(d);
 }
 
 function dateAt(date, timeStr) {
@@ -56,22 +48,23 @@ function clearProfileGeneratedEntries(userID) {
     WHERE userID = ?
       AND taskID IN (
         SELECT taskID FROM task
-        WHERE description IN (?, ?, ?)
+        WHERE description IN (?, ?)
       )
-  `).run(userID, MARKER_WORK, MARKER_COMMUTE_WORK, MARKER_COMMUTE_UNI);
+  `).run(userID, MARKER_WORK, MARKER_COMMUTE_WORK);
 
   db.prepare(`
-    DELETE FROM task WHERE description IN (?, ?, ?)
+    DELETE FROM task WHERE description IN (?, ?)
       AND taskID NOT IN (SELECT taskID FROM calendar_entry)
-  `).run(MARKER_WORK, MARKER_COMMUTE_WORK, MARKER_COMMUTE_UNI);
+  `).run(MARKER_WORK, MARKER_COMMUTE_WORK);
 }
 
 /**
  * Legt (nach dem Aufräumen alter Einträge) frische CalendarEntries für die
- * im Profil angegebenen Arbeitszeiten und Pendelzeiten an - direkt im
- * Kalender sichtbar, über den angegebenen Zeitraum (Semesterende, sonst 90 Tage).
+ * im Profil angegebenen Arbeitszeiten und die Pendelzeit Arbeit/nach Hause an.
+ * Die Pendelzeit braucht keine eigene Ankerzeit mehr - Hinweg endet, Rückweg
+ * beginnt jeweils an der passenden Arbeitszeit selbst (aus workingHours).
  */
-function generateWorkAndCommuteEntries(userID, { workingHours, commuteWork, commuteUni, semesterEnd }) {
+function generateWorkAndCommuteEntries(userID, { workingHours, commuteWork, semesterEnd }) {
   clearProfileGeneratedEntries(userID);
 
   const end = horizonEnd(semesterEnd);
@@ -88,8 +81,11 @@ function generateWorkAndCommuteEntries(userID, { workingHours, commuteWork, comm
   `);
 
   // Arbeitszeiten: eine Task pro Wochentag-Zeile, Termine für jede passende
-  // Woche im Zeitraum
+  // Woche im Zeitraum. Gleichzeitig merken wir uns jedes Vorkommen (Datum +
+  // Start/Ende), damit die Pendelzeit direkt daran andocken kann.
   const workTaskIds = {};
+  const workOccurrences = []; // { date, start, end, weekday }
+
   for (const row of workingHours || []) {
     if (!row || !row.start || !row.end || !row.weekday) continue;
     const key = `${row.weekday}-${row.start}-${row.end}`;
@@ -101,42 +97,32 @@ function generateWorkAndCommuteEntries(userID, { workingHours, commuteWork, comm
 
     for (let d = new Date(today); d <= end; d.setDate(d.getDate() + 1)) {
       if (d.getDay() === jsDay) {
-        insertEntry.run(userID, taskID, isoAt(d, row.start), isoAt(d, row.end));
+        const startDate = dateAt(d, row.start);
+        const endDate = dateAt(d, row.end);
+        insertEntry.run(userID, taskID, toLocalISOString(startDate), toLocalISOString(endDate));
+        workOccurrences.push({ date: new Date(d), start: startDate, end: endDate, weekday: Number(row.weekday) });
       }
     }
   }
 
-  // Pendelzeiten: max. 2 Blöcke (Arbeit, Uni), je mit eigenen Wochentagen.
-  // Hinweg = Ankunft minus Minuten davor, Rückweg = Abfahrt plus Minuten danach.
-  const commuteBlocks = [
-    { data: commuteWork, marker: MARKER_COMMUTE_WORK, label: 'Pendelzeit (Arbeit)' },
-    { data: commuteUni, marker: MARKER_COMMUTE_UNI, label: 'Pendelzeit (Uni)' },
-  ];
-
-  for (const block of commuteBlocks) {
-    const c = block.data;
-    if (!c || !Array.isArray(c.days) || c.days.length === 0) continue;
+  // Pendelzeit Arbeit/nach Hause: Hinweg endet am Start der jeweiligen
+  // Arbeitszeit, Rückweg beginnt an deren Ende - kein manueller Anker nötig.
+  const c = commuteWork;
+  if (c && Array.isArray(c.days) && c.days.length > 0 && (Number(c.minutesBefore) > 0 || Number(c.minutesAfter) > 0)) {
     const minutesBefore = Number(c.minutesBefore) || 0;
     const minutesAfter = Number(c.minutesAfter) || 0;
-    if (!c.arrival && !c.departure) continue;
-    if (minutesBefore <= 0 && minutesAfter <= 0) continue;
-
     const learnable = c.learnable ? 1 : 0;
-    const taskID = insertTask.run(block.label, block.marker, 'Pendelzeit', learnable).lastInsertRowid;
-    const jsDays = c.days.map((wd) => weekdayToJsDay(Number(wd)));
+    const taskID = insertTask.run('Pendelzeit (Arbeit)', MARKER_COMMUTE_WORK, 'Pendelzeit', learnable).lastInsertRowid;
 
-    for (let d = new Date(today); d <= end; d.setDate(d.getDate() + 1)) {
-      if (!jsDays.includes(d.getDay())) continue;
-
-      if (minutesBefore > 0 && c.arrival) {
-        const arrival = dateAt(d, c.arrival);
-        const start = new Date(arrival.getTime() - minutesBefore * 60_000);
-        insertEntry.run(userID, taskID, toLocalISOString(start), toLocalISOString(arrival));
+    for (const occ of workOccurrences) {
+      if (!c.days.includes(occ.weekday)) continue;
+      if (minutesBefore > 0) {
+        const start = new Date(occ.start.getTime() - minutesBefore * 60_000);
+        insertEntry.run(userID, taskID, toLocalISOString(start), toLocalISOString(occ.start));
       }
-      if (minutesAfter > 0 && c.departure) {
-        const departure = dateAt(d, c.departure);
-        const end2 = new Date(departure.getTime() + minutesAfter * 60_000);
-        insertEntry.run(userID, taskID, toLocalISOString(departure), toLocalISOString(end2));
+      if (minutesAfter > 0) {
+        const commuteEnd = new Date(occ.end.getTime() + minutesAfter * 60_000);
+        insertEntry.run(userID, taskID, toLocalISOString(occ.end), toLocalISOString(commuteEnd));
       }
     }
   }

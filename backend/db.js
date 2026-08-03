@@ -24,8 +24,7 @@ CREATE TABLE IF NOT EXISTS user (
   semesterEnd TEXT,
   semesterNumber INTEGER,
   workingHours TEXT,
-  commuteWork TEXT,
-  commuteUni TEXT
+  commuteWork TEXT
 );
 
 CREATE TABLE IF NOT EXISTS user_preferences (
@@ -48,7 +47,9 @@ CREATE TABLE IF NOT EXISTS course (
   priority INTEGER,
   examDates TEXT,
   materialGoal TEXT,
-  materialPath TEXT
+  materialPath TEXT,
+  lectureTimes TEXT,
+  commuteUni TEXT
 );
 
 CREATE TABLE IF NOT EXISTS task (

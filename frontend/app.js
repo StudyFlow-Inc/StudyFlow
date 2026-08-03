@@ -48,6 +48,7 @@ const TRANSLATIONS = {
   'profil.workingHoursHint': { de: 'Landet direkt als Termin im Kalender.', en: 'Goes directly into the calendar as an appointment.' },
   'profil.addWorkingHour': { de: '+ Arbeitszeit hinzufügen', en: '+ Add working hours' },
   'profil.commuteWork': { de: 'Pendelzeit zur Arbeit / nach Hause', en: 'Commute to work / home' },
+  'profil.commuteWorkHint': { de: 'Hinweg endet automatisch am Beginn der jeweiligen Arbeitszeit, Rückweg beginnt an deren Ende.', en: 'The trip there automatically ends when work starts, the trip back starts when work ends.' },
   'profil.commuteUni': { de: 'Pendelzeit zur Uni / nach Hause', en: 'Commute to campus / home' },
   'profil.commuteLearnable': { de: 'In dieser Zeit kann gelernt werden', en: 'Studying is possible during this time' },
   'profil.selectTitle': { de: 'Bestehendes Profil wählen', en: 'Select existing profile' },
@@ -72,6 +73,8 @@ const TRANSLATIONS = {
   'profil.backupTitle': { de: 'Backup', en: 'Backup' },
   'profil.backupHint': { de: 'Lädt die komplette Datenbank als Datei herunter.', en: 'Downloads the complete database as a file.' },
   'profil.backupBtn': { de: 'Datenbank herunterladen', en: 'Download database' },
+  'profil.deleteBtn': { de: 'Profil löschen', en: 'Delete profile' },
+  'profil.deleteConfirm': { de: 'Dieses Profil inklusive aller Kurse, Aufgaben und Kalendereinträge unwiderruflich löschen?', en: 'Permanently delete this profile including all courses, tasks, and calendar entries?' },
   'weekday.mo': { de: 'Mo', en: 'Mon' },
   'weekday.di': { de: 'Di', en: 'Tue' },
   'weekday.mi': { de: 'Mi', en: 'Wed' },
@@ -98,6 +101,10 @@ const TRANSLATIONS = {
   'kurse.materialGoalPlaceholder': { de: 'z. B. 20 Folien/Woche', en: 'e.g. 20 slides/week' },
   'kurse.materialPath': { de: 'Ordnerpfad der Kurs-Unterlagen', en: 'Folder path for course materials' },
   'kurse.materialPathHint': { de: 'Browser können aus Sicherheitsgründen keinen Datei-Explorer öffnen - der Link versucht es best-effort über file://, funktioniert aber nicht in jedem Browser.', en: 'Browsers cannot open a native file explorer for security reasons - the link attempts a best-effort file:// link, which does not work in every browser.' },
+  'kurse.lectureTimes': { de: 'Vorlesungszeiten', en: 'Lecture times' },
+  'kurse.addLectureTime': { de: '+ Vorlesungszeit hinzufügen', en: '+ Add lecture time' },
+  'kurse.commuteUni': { de: 'Pendelzeit zur Uni / nach Hause', en: 'Commute to campus / home' },
+  'kurse.commuteUniHint': { de: 'Hinweg endet automatisch am Beginn der jeweiligen Vorlesung, Rückweg beginnt an deren Ende.', en: 'The trip there automatically ends when the lecture starts, the trip back starts when it ends.' },
   'kurse.createBtn': { de: 'Kurs anlegen', en: 'Create course' },
 
   'task.addTitle': { de: 'Aufgabe / Termin anlegen', en: 'Create task / appointment' },
@@ -174,7 +181,7 @@ const TRANSLATIONS = {
   'entryModal.start': { de: 'Start', en: 'Start' },
   'entryModal.end': { de: 'Ende', en: 'End' },
   'entryModal.reminder': { de: 'Erinnerung', en: 'Reminder' },
-  'entryModal.reminderDays': { de: 'Erinnerungs-Pop-Up (Tage vorher)', en: 'Reminder popup (days before)' },
+  'entryModal.reminderDays': { de: 'Erinnerungs-Pop-Up (Tage vorher, 0 = am selben Tag)', en: 'Reminder popup (days before, 0 = same day)' },
   'reminder.title': { de: 'Erinnerungen', en: 'Reminders' },
   'entryModal.reminderPlaceholder': { de: 'z. B. 30 Min. vorher', en: 'e.g. 30 min. before' },
   'entryModal.createBtn': { de: 'Eintrag anlegen', en: 'Create entry' },
@@ -391,33 +398,12 @@ function profileFieldsTemplate(prefix) {
           <label><input type="checkbox" class="${prefix}commuteWork-day" value="${v}">${t(key)}</label>
         `).join('')}
       </div>
-      <div class="commute-times-row">
-        <label>${t('profil.arrival')}<input type="time" id="${prefix}commuteWork-arrival"></label>
-        <label>${t('profil.departure')}<input type="time" id="${prefix}commuteWork-departure"></label>
-      </div>
+      <p class="hint">${t('profil.commuteWorkHint')}</p>
       <div class="commute-times-row">
         <label>${t('profil.minutesBefore')}<input type="number" id="${prefix}commuteWork-minutesBefore" min="0"></label>
         <label>${t('profil.minutesAfter')}<input type="number" id="${prefix}commuteWork-minutesAfter" min="0"></label>
       </div>
       <label class="checkbox-label"><input type="checkbox" id="${prefix}commuteWork-learnable"> ${t('profil.commuteLearnable')}</label>
-    </div>
-
-    <div class="commute-block">
-      <label>${t('profil.commuteUni')}</label>
-      <div class="weekday-checks">
-        ${WEEKDAY_OPTIONS.map(([v, key]) => `
-          <label><input type="checkbox" class="${prefix}commuteUni-day" value="${v}">${t(key)}</label>
-        `).join('')}
-      </div>
-      <div class="commute-times-row">
-        <label>${t('profil.arrival')}<input type="time" id="${prefix}commuteUni-arrival"></label>
-        <label>${t('profil.departure')}<input type="time" id="${prefix}commuteUni-departure"></label>
-      </div>
-      <div class="commute-times-row">
-        <label>${t('profil.minutesBefore')}<input type="number" id="${prefix}commuteUni-minutesBefore" min="0"></label>
-        <label>${t('profil.minutesAfter')}<input type="number" id="${prefix}commuteUni-minutesAfter" min="0"></label>
-      </div>
-      <label class="checkbox-label"><input type="checkbox" id="${prefix}commuteUni-learnable"> ${t('profil.commuteLearnable')}</label>
     </div>
   `;
 }
@@ -465,6 +451,32 @@ function addWorkingHourRow(prefix, row = {}) {
   list.appendChild(el);
 }
 
+function addLectureTimeRow(row = {}) {
+  const list = document.getElementById('lecture-times-list');
+  const el = document.createElement('div');
+  el.className = 'working-hours-row';
+  el.innerHTML = `
+    <select class="lectureTime-weekday">
+      ${WEEKDAY_OPTIONS.map(([v, key]) => `<option value="${v}" ${Number(row.weekday) === v ? 'selected' : ''}>${t(key)}</option>`).join('')}
+    </select>
+    <input type="time" class="lectureTime-start" value="${row.start || ''}">
+    <input type="time" class="lectureTime-end" value="${row.end || ''}">
+    <button type="button" class="secondary">${t('common.remove')}</button>
+  `;
+  el.querySelector('button').addEventListener('click', () => el.remove());
+  list.appendChild(el);
+}
+
+function getLectureTimesFromForm() {
+  return Array.from(document.getElementById('lecture-times-list').children).map(row => ({
+    weekday: Number(row.querySelector('.lectureTime-weekday').value),
+    start: row.querySelector('.lectureTime-start').value,
+    end: row.querySelector('.lectureTime-end').value,
+  })).filter(r => r.start && r.end);
+}
+
+document.getElementById('add-lecture-time-btn').addEventListener('click', () => addLectureTimeRow());
+
 function addPreferredTimeRangeRow(prefix, range = {}) {
   const list = document.getElementById(`${prefix}preferred-times-list`);
   const el = document.createElement('div');
@@ -481,6 +493,26 @@ function addPreferredTimeRangeRow(prefix, range = {}) {
   list.appendChild(el);
 }
 
+function getCommuteFromForm(prefix, name) {
+  return {
+    days: Array.from(document.querySelectorAll(`.${prefix}${name}-day:checked`)).map(cb => Number(cb.value)),
+    minutesBefore: Number(document.getElementById(`${prefix}${name}-minutesBefore`)?.value) || 0,
+    minutesAfter: Number(document.getElementById(`${prefix}${name}-minutesAfter`)?.value) || 0,
+    learnable: document.getElementById(`${prefix}${name}-learnable`)?.checked || false,
+  };
+}
+
+function setCommuteInForm(prefix, name, c) {
+  document.querySelectorAll(`.${prefix}${name}-day`).forEach(cb => {
+    cb.checked = !!(c && c.days && c.days.includes(Number(cb.value)));
+  });
+  const setVal = (id, value) => { const el = document.getElementById(`${prefix}${id}`); if (el) el.value = value ?? ''; };
+  setVal(`${name}-minutesBefore`, c?.minutesBefore);
+  setVal(`${name}-minutesAfter`, c?.minutesAfter);
+  const learnableEl = document.getElementById(`${prefix}${name}-learnable`);
+  if (learnableEl) learnableEl.checked = !!(c && c.learnable);
+}
+
 function getProfileFieldsFromForm(prefix) {
   const val = (id) => document.getElementById(`${prefix}${id}`)?.value || '';
   const workingHoursRows = Array.from(document.getElementById(`${prefix}working-hours-list`).children).map(row => ({
@@ -488,15 +520,6 @@ function getProfileFieldsFromForm(prefix) {
     start: row.querySelector(`.${prefix}workingHour-start`).value,
     end: row.querySelector(`.${prefix}workingHour-end`).value,
   })).filter(r => r.start && r.end);
-
-  const getCommute = (name) => ({
-    days: Array.from(document.querySelectorAll(`.${prefix}${name}-day:checked`)).map(cb => Number(cb.value)),
-    arrival: val(`${name}-arrival`),
-    departure: val(`${name}-departure`),
-    minutesBefore: Number(val(`${name}-minutesBefore`)) || 0,
-    minutesAfter: Number(val(`${name}-minutesAfter`)) || 0,
-    learnable: document.getElementById(`${prefix}${name}-learnable`)?.checked || false,
-  });
 
   return {
     userName: val('userName'),
@@ -508,8 +531,7 @@ function getProfileFieldsFromForm(prefix) {
     semesterEnd: val('semesterEnd'),
     semesterNumber: Number(val('semesterNumber')) || null,
     workingHours: workingHoursRows,
-    commuteWork: getCommute('commuteWork'),
-    commuteUni: getCommute('commuteUni'),
+    commuteWork: getCommuteFromForm(prefix, 'commuteWork'),
   };
 }
 
@@ -528,19 +550,7 @@ function setProfileFieldsInForm(prefix, user) {
   list.innerHTML = '';
   (user.workingHours && user.workingHours.length ? user.workingHours : []).forEach(row => addWorkingHourRow(prefix, row));
 
-  const setCommute = (name, c) => {
-    document.querySelectorAll(`.${prefix}${name}-day`).forEach(cb => {
-      cb.checked = !!(c && c.days && c.days.includes(Number(cb.value)));
-    });
-    set(`${name}-arrival`, c?.arrival);
-    set(`${name}-departure`, c?.departure);
-    set(`${name}-minutesBefore`, c?.minutesBefore);
-    set(`${name}-minutesAfter`, c?.minutesAfter);
-    const learnableEl = document.getElementById(`${prefix}${name}-learnable`);
-    if (learnableEl) learnableEl.checked = !!(c && c.learnable);
-  };
-  setCommute('commuteWork', user.commuteWork);
-  setCommute('commuteUni', user.commuteUni);
+  setCommuteInForm(prefix, 'commuteWork', user.commuteWork);
 }
 
 function getPreferencesFieldsFromForm(prefix) {
@@ -602,6 +612,26 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
     showToast('Profil aktualisiert.');
     await loadUsers();
     await refreshActiveUserDisplay();
+    await loadEntries();
+  } catch (err) {
+    showToast('Fehler: ' + err.message, true);
+  }
+});
+
+document.getElementById('delete-profile-btn').addEventListener('click', async () => {
+  if (!requireActiveUser()) return;
+  if (!confirm(t('profil.deleteConfirm'))) return;
+  try {
+    await api(`/users/${currentUserID}`, { method: 'DELETE' });
+    showToast('Profil gelöscht.');
+    currentUserID = null;
+    localStorage.removeItem('currentUserID');
+    setProfileFieldsInForm('', {});
+    await loadUsers();
+    await refreshActiveUserDisplay();
+    await loadPreferencesIntoForm();
+    await loadCourses();
+    await loadTasks();
     await loadEntries();
   } catch (err) {
     showToast('Fehler: ' + err.message, true);
@@ -793,6 +823,8 @@ function setCourseFormEditMode(course) {
   if (!course) {
     document.getElementById('course-form').reset();
     resetExamDatesInForm();
+    document.getElementById('lecture-times-list').innerHTML = '';
+    setCommuteInForm('', 'commuteUni', null);
     return;
   }
 
@@ -807,6 +839,12 @@ function setCourseFormEditMode(course) {
   const list = document.getElementById('exam-dates-list');
   list.innerHTML = '';
   (course.examDates && course.examDates.length ? course.examDates : ['']).forEach(d => addExamDateRow(d));
+
+  const lectureList = document.getElementById('lecture-times-list');
+  lectureList.innerHTML = '';
+  (course.lectureTimes && course.lectureTimes.length ? course.lectureTimes : []).forEach(row => addLectureTimeRow(row));
+
+  setCommuteInForm('', 'commuteUni', course.commuteUni);
 }
 
 document.getElementById('course-form').addEventListener('submit', async (e) => {
@@ -823,6 +861,8 @@ document.getElementById('course-form').addEventListener('submit', async (e) => {
       examDates: getExamDatesFromForm(),
       materialGoal: document.getElementById('materialGoal').value,
       materialPath: document.getElementById('materialPath').value,
+      lectureTimes: getLectureTimesFromForm(),
+      commuteUni: getCommuteFromForm('', 'commuteUni'),
     };
 
     if (editingCourseID) {
@@ -1274,8 +1314,8 @@ document.getElementById('undo-btn').addEventListener('click', async () => {
 
 // ---------- Kalenderansicht (Woche/Monat) ----------
 
-const HOUR_START = 6;
-const HOUR_END = 23;
+const HOUR_START = 0;
+const HOUR_END = 24;
 const SLOT_MINUTES = 30;
 const SLOTS_PER_DAY = ((HOUR_END - HOUR_START) * 60) / SLOT_MINUTES;
 function getWeekdayLabels() {
@@ -1386,11 +1426,17 @@ function checkDueReminders() {
   }
 
   const now = new Date();
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
   const due = allEntries.filter(en => {
     if (!en.reminderDaysBefore && en.reminderDaysBefore !== 0) return false;
     const start = new Date(en.startDateTime);
-    const daysUntil = (start - now) / (24 * 3600 * 1000);
-    if (daysUntil < 0 || daysUntil > en.reminderDaysBefore) return false;
+    if (start <= now) return false; // Termin hat schon begonnen/ist vorbei
+
+    const startMidnight = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const daysUntilCalendar = Math.round((startMidnight - todayMidnight) / (24 * 3600 * 1000));
+
+    if (daysUntilCalendar < 0 || daysUntilCalendar > Number(en.reminderDaysBefore)) return false;
     return shown[en.entryID] !== todayKey;
   });
 
@@ -1466,11 +1512,24 @@ searchInput.addEventListener('input', () => {
   }
 
   const courseMatches = (allCoursesCache || []).filter(c => c.courseName.toLowerCase().includes(q));
-  const taskMatches = Object.values(taskInfoById).filter(t => t.taskName.toLowerCase().includes(q));
+  const taskMatches = Object.values(taskInfoById).filter(task => task.taskName.toLowerCase().includes(q));
   const entryMatches = allEntries.filter(en => {
     const task = taskInfoById[en.taskID];
     return task && task.taskName.toLowerCase().includes(q);
   });
+
+  // Für jeden Task-Treffer den nächsten (kommenden, sonst ersten) zugehörigen
+  // Kalendereintrag suchen, damit ein Klick direkt dorthin springt statt nur
+  // zur Aufgaben-Seite. Nur falls der Task gar keinen Termin hat, bleibt der
+  // Sprung zur Aufgaben-Seite als Fallback.
+  const now = new Date();
+  function nearestEntryForTask(taskID) {
+    const entries = allEntries.filter(en => en.taskID === taskID);
+    if (entries.length === 0) return null;
+    const upcoming = entries.filter(en => new Date(en.startDateTime) >= now)
+      .sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+    return upcoming[0] || entries.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime))[0];
+  }
 
   const sections = [];
   if (courseMatches.length) {
@@ -1479,7 +1538,14 @@ searchInput.addEventListener('input', () => {
   }
   if (taskMatches.length) {
     sections.push(`<div class="search-group-label">✓ Aufgaben &amp; Termine</div>` +
-      taskMatches.map(t => `<button type="button" class="search-result-item" data-view="aufgaben">${t.discriminator === 'LearnSession' ? '📘' : '✓'} ${t.taskName}</button>`).join(''));
+      taskMatches.map(task => {
+        const nearest = nearestEntryForTask(task.taskID);
+        const icon = task.discriminator === 'LearnSession' ? '📘' : '✓';
+        if (nearest) {
+          return `<button type="button" class="search-result-item" data-view="kalender" data-entry-id="${nearest.entryID}" data-entry-start="${nearest.startDateTime}">${icon} ${task.taskName}</button>`;
+        }
+        return `<button type="button" class="search-result-item" data-view="aufgaben">${icon} ${task.taskName}</button>`;
+      }).join(''));
   }
   if (entryMatches.length) {
     sections.push(`<div class="search-group-label">📅 Kalendereinträge</div>` +

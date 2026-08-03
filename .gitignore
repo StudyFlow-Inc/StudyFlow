@@ -1,4 +1,40 @@
+# ---------- Node.js ----------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+
+# ---------- Lokale SQLite-Datenbank ----------
+# Das ist vermutlich die Hauptursache eurer Merge-Probleme: Jede Instanz hat
+# ihre eigenen Testdaten, die Binärdatei lässt sich nicht sinnvoll mergen.
+backend/data/
+**/data/*.db
+**/data/*.db-wal
+**/data/*.db-shm
+*.sqlite
+*.sqlite3
+
+# ---------- Backups ----------
+# Downloads über den Backup-Button, falls versehentlich im Projektordner
+# gespeichert
 *.db
-*.db-shm
-*.db-wal
+studyflow-backup.db
+
+# ---------- Betriebssystem ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Editor/IDE ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------- Logs ----------
 *.log
+logs/
+
+# ---------- Sonstiges ----------
+.cache/

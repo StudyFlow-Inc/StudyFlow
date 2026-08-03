@@ -100,22 +100,23 @@ a, button {
 }
 
 .brand-mark {
-  width: 2rem;
-  height: 2rem;
+  width: 2.4rem;
+  height: 2.4rem;
   border-radius: 8px;
-  background: var(--accent);
-  color: var(--surface);
+  background: #ffffff;
+  padding: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.85rem;
-  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--border);
 }
 .brand-mark img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .brand-name {
@@ -238,6 +239,7 @@ a, button {
   text-align: left;
   border: none;
   background: transparent;
+  color: var(--text);
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   font-size: 0.9rem;
@@ -584,6 +586,11 @@ button.secondary:hover { background: var(--surface-2); }
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+}
+
+#calendar-container {
+  max-height: 70vh;
+  overflow-y: auto;
 }
 .week-header {
   background: var(--bg);

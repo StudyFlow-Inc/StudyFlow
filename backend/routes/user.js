@@ -11,7 +11,6 @@ function withParsedJsonFields(user) {
     ...user,
     workingHours: parse(user.workingHours, []),
     commuteWork: parse(user.commuteWork, null),
-    commuteUni: parse(user.commuteUni, null),
   };
 }
 
@@ -29,28 +28,27 @@ router.post('/', (req, res) => {
   const {
     userName, fieldOfStudy, employment, livingSituation,
     semesterType, semesterStart, semesterEnd, semesterNumber,
-    workingHours, commuteWork, commuteUni,
+    workingHours, commuteWork,
   } = req.body;
 
   const info = db.prepare(`
     INSERT INTO user (
       userName, fieldOfStudy, employment, livingSituation,
       semesterType, semesterStart, semesterEnd, semesterNumber,
-      workingHours, commuteWork, commuteUni
+      workingHours, commuteWork
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     userName, fieldOfStudy, employment, livingSituation,
     semesterType || null, semesterStart || null, semesterEnd || null, semesterNumber || null,
     JSON.stringify(Array.isArray(workingHours) ? workingHours : []),
-    JSON.stringify(commuteWork || null),
-    JSON.stringify(commuteUni || null)
+    JSON.stringify(commuteWork || null)
   );
 
   const userID = info.lastInsertRowid;
   db.prepare('INSERT INTO user_preferences (userID) VALUES (?)').run(userID);
 
-  generateWorkAndCommuteEntries(userID, { workingHours, commuteWork, commuteUni, semesterEnd });
+  generateWorkAndCommuteEntries(userID, { workingHours, commuteWork, semesterEnd });
 
   res.status(201).json({ userID });
 });
@@ -59,31 +57,34 @@ router.put('/:id', (req, res) => {
   const {
     userName, fieldOfStudy, employment, livingSituation,
     semesterType, semesterStart, semesterEnd, semesterNumber,
-    workingHours, commuteWork, commuteUni,
+    workingHours, commuteWork,
   } = req.body;
 
   db.prepare(`
     UPDATE user SET
       userName = ?, fieldOfStudy = ?, employment = ?, livingSituation = ?,
       semesterType = ?, semesterStart = ?, semesterEnd = ?, semesterNumber = ?,
-      workingHours = ?, commuteWork = ?, commuteUni = ?
+      workingHours = ?, commuteWork = ?
     WHERE userID = ?
   `).run(
     userName, fieldOfStudy, employment, livingSituation,
     semesterType || null, semesterStart || null, semesterEnd || null, semesterNumber || null,
     JSON.stringify(Array.isArray(workingHours) ? workingHours : []),
     JSON.stringify(commuteWork || null),
-    JSON.stringify(commuteUni || null),
     req.params.id
   );
 
-  generateWorkAndCommuteEntries(req.params.id, { workingHours, commuteWork, commuteUni, semesterEnd });
+  generateWorkAndCommuteEntries(req.params.id, { workingHours, commuteWork, semesterEnd });
 
   res.json({ updated: true });
 });
 
+// Löscht das Profil komplett (Kurse/Kalendereinträge/Einstellungen kaskadieren per FK)
 router.delete('/:id', (req, res) => {
-  db.prepare('DELETE FROM user WHERE userID = ?').run(req.params.id);
+  const info = db.prepare('DELETE FROM user WHERE userID = ?').run(req.params.id);
+  if (info.changes === 0) {
+    return res.status(404).json({ deleted: false, error: 'Profil wurde nicht gefunden.' });
+  }
   res.json({ deleted: true });
 });
 
