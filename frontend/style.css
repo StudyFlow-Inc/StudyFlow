@@ -3,7 +3,7 @@
   --bg: #f4f4f3;
   --surface: #ffffff;
   --surface-2: #ececeb;
-  --border: #d8d8d6;
+  --border: #c7c8c5;
   --text: #24262b;
   --text-muted: #63666d;
   --accent: #33363d;      /* anthracite - primary UI accent */
@@ -110,6 +110,12 @@ a, button {
   justify-content: center;
   font-weight: 700;
   font-size: 0.85rem;
+  overflow: hidden;
+}
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .brand-name {
@@ -180,6 +186,9 @@ a, button {
   font-size: 1.3rem;
   padding: 0.25rem 0.5rem;
   cursor: pointer;
+  position: relative;
+  z-index: 61;
+  color: var(--text);
 }
 
 .search-wrap {
@@ -252,6 +261,7 @@ a, button {
   padding: 0.4rem 0.6rem;
   cursor: pointer;
   font-size: 1rem;
+  color: var(--text);
 }
 
 .active-user {
@@ -409,7 +419,7 @@ label {
   gap: 0.5rem;
 }
 
-input, select {
+input, select, textarea {
   font: inherit;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--border);
@@ -513,6 +523,11 @@ button.secondary:hover { background: var(--surface-2); }
 
 .cal-nav { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
 .cal-nav button:not(.secondary) { padding: 0.3rem 0.7rem; }
+#cal-prev, #cal-next {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
 #cal-label { min-width: 160px; text-align: center; font-weight: 600; }
 
 .month-grid {
@@ -579,6 +594,26 @@ button.secondary:hover { background: var(--surface-2); }
   border-left: 1px solid var(--border);
 }
 .week-header.corner { border-left: none; }
+.week-header.today {
+  background: var(--accent);
+  color: var(--surface);
+}
+.week-cell.today-col {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.week-header.holiday,
+.month-day.holiday {
+  position: relative;
+}
+.week-header.holiday::after,
+.month-day.holiday .day-number::after {
+  content: "🎌";
+  font-size: 0.7em;
+  margin-left: 0.3em;
+}
+.month-day.holiday {
+  background: color-mix(in srgb, var(--cat-termine) 8%, var(--surface));
+}
 .week-hour-label {
   font-size: 0.7rem;
   color: var(--text-muted);
@@ -620,6 +655,16 @@ button.secondary:hover { background: var(--surface-2); }
 [data-theme="dark"] .event-pendelzeit {
   background: #4a4d54;
   color: #d8dade;
+}
+
+.search-highlight {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+  animation: search-pulse 1s ease-in-out 2;
+}
+@keyframes search-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.35); }
 }
 
 .working-hours-row,
@@ -717,7 +762,77 @@ button.secondary:hover { background: var(--surface-2); }
 .modal-actions { display: flex; gap: 0.5rem; }
 .modal-actions button { flex: 1; }
 
-/* ===== Chat (KI-Assistent) ===== */
+/* ===== Schwebender KI-Chat + Feedback-Mail-Symbol ===== */
+
+#chat-widget,
+.feedback-mail-btn {
+  position: fixed;
+  z-index: 70;
+}
+
+#chat-widget {
+  bottom: 1.25rem;
+  right: 1.25rem;
+}
+
+.chat-bubble-toggle {
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+}
+
+.chat-panel {
+  position: absolute;
+  bottom: 4rem;
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 2.5rem);
+  height: 480px;
+  max-height: 70vh;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem;
+}
+.chat-panel.hidden { display: none; }
+
+.chat-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.feedback-mail-btn {
+  bottom: 1.25rem;
+  left: 1.25rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Beides ausblenden, solange ein Popup-Dialog aktiv ist */
+body.modal-open #chat-widget,
+body.modal-open .feedback-mail-btn {
+  display: none;
+}
 
 .chat-card {
   display: flex;

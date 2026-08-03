@@ -25,6 +25,8 @@ D) Eine Bitte, einen bestehenden Termin ZU LÖSCHEN (z. B. "Training am Donnerst
    -> identifiziere GENAU DIESEN einen Termin anhand von Name/Zeit und gib ihn in "deletions" an - aber NUR wenn "editable": true für ihn gilt
 E) Eine Bitte, einen bestehenden Termin UMZUBENENNEN (z. B. "Nenne den Zahnarzttermin in Kontrolltermin um")
    -> identifiziere GENAU DIESEN einen Termin anhand von Name/Zeit und gib ihn in "renames" an - aber NUR wenn "editable": true für ihn gilt
+F) Eine reine FRAGE zum Kalender, die keine Änderung erfordert (z. B. "Wann ist meine nächste Lernsession?", "Wie viele Termine habe ich diese Woche?", "Ist am Montag noch Zeit frei?")
+   -> beantworte die Frage direkt und knapp anhand der Termine unten, setze das Ergebnis in "answer", und lasse "changes", "newEntries", "deletions", "renames" leer sowie "needsClarification" auf false
 
 Alle relevanten bestehenden Termine im Zeitraum (JSON, "entryID" ist der eindeutige Bezeichner):
 ${JSON.stringify(allEntries, null, 2)}
@@ -59,6 +61,10 @@ oder eine notwendige Angabe fehlt - etwa welcher Kurs gemeint ist oder wie lange
 Session dauern soll): STELLE STATTDESSEN EINE EINZIGE, KURZE RÜCKFRAGE, statt zu raten. Setze
 dafür "needsClarification": true und "clarifyingQuestion" auf die Frage, und lasse "changes",
 "newEntries", "deletions" und "renames" leer.
+WICHTIG: Eine reine informative Frage (Option F, z. B. "wann ist meine nächste Lernsession?")
+ist NICHT automatisch mehrdeutig - beantworte sie direkt über "answer", auch wenn du dafür nur
+die unten gelisteten Termine zur Verfügung hast. Frage nur nach, wenn die Frage selbst ohne
+weitere Angabe wirklich nicht beantwortbar ist.
 
 Antworte AUSSCHLIESSLICH mit folgendem JSON-Format, ohne zusätzlichen Text, ohne Markdown-Codeblock:
 {
@@ -77,6 +83,7 @@ Antworte AUSSCHLIESSLICH mit folgendem JSON-Format, ohne zusätzlichen Text, ohn
   ],
   "needsClarification": <true oder false>,
   "clarifyingQuestion": "<Frage an den Nutzer, nur falls needsClarification true ist, sonst leer>",
+  "answer": "<Antworttext, nur falls es eine reine Frage war (Option F), sonst leer>",
   "summary": "<ein Satz, der alles zusammenfasst>"
 }
 

@@ -65,6 +65,9 @@ const TRANSLATIONS = {
   'profil.favoriteLocation': { de: 'Bevorzugter Lernort', en: 'Favorite study location' },
   'profil.excludedWeekdays': { de: 'Tage vom Lernen ausschließen', en: 'Exclude days from studying' },
   'profil.savePrefsBtn': { de: 'Einstellungen speichern', en: 'Save settings' },
+  'profil.backupTitle': { de: 'Backup', en: 'Backup' },
+  'profil.backupHint': { de: 'Lädt die komplette Datenbank als Datei herunter.', en: 'Downloads the complete database as a file.' },
+  'profil.backupBtn': { de: 'Datenbank herunterladen', en: 'Download database' },
   'weekday.mo': { de: 'Mo', en: 'Mon' },
   'weekday.di': { de: 'Di', en: 'Tue' },
   'weekday.mi': { de: 'Mi', en: 'Wed' },
@@ -74,6 +77,13 @@ const TRANSLATIONS = {
   'weekday.so': { de: 'So', en: 'Sun' },
 
   'kurse.addTitle': { de: 'Kurs hinzufügen', en: 'Add course' },
+  'kurse.editTitle': { de: 'Kurs bearbeiten', en: 'Edit course' },
+  'kurse.workloadUnit': { de: 'Angabe pro', en: 'Specified per' },
+  'kurse.workloadTotal': { de: 'Insgesamt', en: 'Total' },
+  'kurse.workloadWeek': { de: 'Woche', en: 'Week' },
+  'kurse.workloadMonth': { de: 'Monat', en: 'Month' },
+  'kurse.workloadHint': { de: 'Bei Woche/Monat wird der Gesamtaufwand anhand des Semesterendes (Profil) automatisch hochgerechnet.', en: 'For week/month, the total is automatically projected using the semester end date (profile).' },
+  'kurse.updateBtn': { de: 'Kurs aktualisieren', en: 'Update course' },
   'kurse.name': { de: 'Kursname', en: 'Course name' },
   'kurse.workload': { de: 'Zeitaufwand gesamt (Std.)', en: 'Total workload (hrs)' },
   'kurse.ects': { de: 'ECTS', en: 'ECTS' },
@@ -82,9 +92,14 @@ const TRANSLATIONS = {
   'kurse.addExamDate': { de: '+ Prüfungstermin hinzufügen', en: '+ Add exam date' },
   'kurse.materialGoal': { de: 'Kursmaterial-Ziel (z. B. "20 Folien/Woche")', en: 'Course material goal (e.g. "20 slides/week")' },
   'kurse.materialGoalPlaceholder': { de: 'z. B. 20 Folien/Woche', en: 'e.g. 20 slides/week' },
+  'kurse.materialPath': { de: 'Ordnerpfad der Kurs-Unterlagen', en: 'Folder path for course materials' },
+  'kurse.materialPathHint': { de: 'Browser können aus Sicherheitsgründen keinen Datei-Explorer öffnen - der Link versucht es best-effort über file://, funktioniert aber nicht in jedem Browser.', en: 'Browsers cannot open a native file explorer for security reasons - the link attempts a best-effort file:// link, which does not work in every browser.' },
   'kurse.createBtn': { de: 'Kurs anlegen', en: 'Create course' },
 
   'task.addTitle': { de: 'Aufgabe / Termin anlegen', en: 'Create task / appointment' },
+  'task.editTitle': { de: 'Aufgabe / Termin bearbeiten', en: 'Edit task / appointment' },
+  'task.note': { de: 'Notiz', en: 'Note' },
+  'task.updateBtn': { de: 'Aktualisieren', en: 'Update' },
   'task.listTitle': { de: 'Aufgaben & Termine', en: 'Tasks & Appointments' },
   'task.type': { de: 'Typ', en: 'Type' },
   'task.typeLearnSession': { de: 'Lernsession (an Kurs gebunden)', en: 'Learn session (tied to a course)' },
@@ -155,10 +170,13 @@ const TRANSLATIONS = {
   'entryModal.start': { de: 'Start', en: 'Start' },
   'entryModal.end': { de: 'Ende', en: 'End' },
   'entryModal.reminder': { de: 'Erinnerung', en: 'Reminder' },
+  'entryModal.reminderDays': { de: 'Erinnerungs-Pop-Up (Tage vorher)', en: 'Reminder popup (days before)' },
+  'reminder.title': { de: 'Erinnerungen', en: 'Reminders' },
   'entryModal.reminderPlaceholder': { de: 'z. B. 30 Min. vorher', en: 'e.g. 30 min. before' },
   'entryModal.createBtn': { de: 'Eintrag anlegen', en: 'Create entry' },
 
   'common.remove': { de: 'Entfernen', en: 'Remove' },
+  'common.edit': { de: 'Bearbeiten', en: 'Edit' },
   'common.save': { de: 'Speichern', en: 'Save' },
   'common.delete': { de: 'Löschen', en: 'Delete' },
   'common.close': { de: 'Schließen', en: 'Close' },
@@ -592,10 +610,12 @@ document.getElementById('new-profile-btn').addEventListener('click', () => {
   setProfileFieldsInForm('new-', {});
   setPreferencesFieldsInForm('new-', {});
   newProfileModal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
 });
 
 function closeNewProfileModal() {
   newProfileModal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
 }
 
 document.getElementById('close-new-profile-modal').addEventListener('click', closeNewProfileModal);
@@ -702,7 +722,7 @@ function addExamDateRow(value = '') {
   const row = document.createElement('div');
   row.className = 'repeatable-row';
   row.innerHTML = `
-    <input type="date" class="examDate-input" value="${value}">
+    <input type="datetime-local" class="examDate-input" value="${value}">
     <button type="button" class="secondary remove-exam-date-btn">Entfernen</button>
   `;
   row.querySelector('.remove-exam-date-btn').addEventListener('click', () => {
@@ -747,6 +767,32 @@ function resetExamDatesInForm() {
   });
 }
 
+let editingCourseID = null;
+
+function setCourseFormEditMode(course) {
+  editingCourseID = course ? course.courseID : null;
+  document.getElementById('course-form-title').textContent = course ? t('kurse.editTitle') : t('kurse.addTitle');
+  document.getElementById('course-form-submit-btn').textContent = course ? t('kurse.updateBtn') : t('kurse.createBtn');
+
+  if (!course) {
+    document.getElementById('course-form').reset();
+    resetExamDatesInForm();
+    return;
+  }
+
+  document.getElementById('courseName').value = course.courseName || '';
+  document.getElementById('workload').value = course.workload ?? '';
+  document.getElementById('workloadUnit').value = course.workloadUnit || 'total';
+  document.getElementById('ects').value = course.ects ?? '';
+  document.getElementById('priority').value = course.priority ?? '';
+  document.getElementById('materialGoal').value = course.materialGoal || '';
+  document.getElementById('materialPath').value = course.materialPath || '';
+
+  const list = document.getElementById('exam-dates-list');
+  list.innerHTML = '';
+  (course.examDates && course.examDates.length ? course.examDates : ['']).forEach(d => addExamDateRow(d));
+}
+
 document.getElementById('course-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
@@ -755,22 +801,32 @@ document.getElementById('course-form').addEventListener('submit', async (e) => {
       userID: currentUserID,
       courseName: document.getElementById('courseName').value,
       workload: Number(document.getElementById('workload').value) || 0,
+      workloadUnit: document.getElementById('workloadUnit').value,
       ects: Number(document.getElementById('ects').value) || 0,
       priority: Number(document.getElementById('priority').value) || 0,
       examDates: getExamDatesFromForm(),
       materialGoal: document.getElementById('materialGoal').value,
+      materialPath: document.getElementById('materialPath').value,
     };
-    await api('/courses', { method: 'POST', body: JSON.stringify(body) });
-    showToast('Kurs angelegt.');
-    e.target.reset();
-    resetExamDatesInForm();
+
+    if (editingCourseID) {
+      await api(`/courses/${editingCourseID}`, { method: 'PUT', body: JSON.stringify(body) });
+      showToast('Kurs aktualisiert.');
+    } else {
+      await api('/courses', { method: 'POST', body: JSON.stringify(body) });
+      showToast('Kurs angelegt.');
+    }
+    setCourseFormEditMode(null);
     await loadCourses();
+    await loadEntries();
   } catch (err) {
     showToast('Fehler: ' + err.message, true);
   }
 });
 
 let allCoursesCache = [];
+
+const workloadUnitLabel = { total: '', week: '/Woche', month: '/Monat' };
 
 async function loadCourses() {
   const courses = currentUserID ? (await api('/courses')).filter(c => c.userID === currentUserID) : [];
@@ -781,11 +837,15 @@ async function loadCourses() {
     <tr>
       <td>${c.courseName}</td>
       <td>${c.ects ?? ''}</td>
-      <td>${c.workload ?? ''} Std.</td>
+      <td>${c.workload ?? ''} Std.${workloadUnitLabel[c.workloadUnit] || ''}</td>
       <td>${c.priority ?? ''}</td>
-      <td>${(c.examDates || []).map(d => new Date(d).toLocaleDateString(localeTag())).join(', ') || '–'}</td>
+      <td>${(c.examDates || []).map(d => new Date(d).toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })).join(', ') || '–'}</td>
       <td>${c.materialGoal || '–'}</td>
-      <td><button class="secondary" data-delete-course="${c.courseID}">Löschen</button></td>
+      <td>
+        ${c.materialPath ? `<a href="file:///${c.materialPath.replace(/\\/g, '/')}" class="folder-link" title="${t('kurse.materialPathHint')}">📂</a>` : ''}
+        <button class="secondary" data-edit-course="${c.courseID}">${t('common.edit')}</button>
+        <button class="secondary" data-delete-course="${c.courseID}">${t('common.delete')}</button>
+      </td>
     </tr>
   `).join('') || '<tr><td colspan="7" class="hint">Noch keine Kurse.</td></tr>';
 
@@ -798,7 +858,19 @@ async function loadCourses() {
     btn.addEventListener('click', async () => {
       await api(`/courses/${btn.dataset.deleteCourse}`, { method: 'DELETE' });
       showToast('Kurs gelöscht.');
+      if (editingCourseID === Number(btn.dataset.deleteCourse)) setCourseFormEditMode(null);
       await loadCourses();
+      await loadEntries();
+    });
+  });
+
+  tbody.querySelectorAll('[data-edit-course]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const course = courses.find(c => c.courseID === Number(btn.dataset.editCourse));
+      if (course) {
+        setCourseFormEditMode(course);
+        document.getElementById('course-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     });
   });
 }
@@ -811,6 +883,47 @@ document.getElementById('discriminator').addEventListener('change', (e) => {
   document.getElementById('fixedtask-fields').classList.toggle('hidden', isLearnSession);
 });
 
+let editingTaskFormID = null;
+
+function setTaskFormEditMode(task) {
+  editingTaskFormID = task ? task.taskID : null;
+  document.getElementById('task-form-title').textContent = task ? t('task.editTitle') : t('task.addTitle');
+  document.getElementById('task-form-submit-btn').textContent = task ? t('task.updateBtn') : t('task.createBtn');
+
+  if (!task) {
+    document.getElementById('task-form').reset();
+    document.getElementById('learnsession-fields').classList.remove('hidden');
+    document.getElementById('fixedtask-fields').classList.add('hidden');
+    return;
+  }
+
+  document.getElementById('discriminator').value = task.discriminator;
+  document.getElementById('discriminator').dispatchEvent(new Event('change'));
+  document.getElementById('taskName').value = task.taskName || '';
+  document.getElementById('description').value = task.description || '';
+  document.getElementById('location').value = task.location || '';
+  document.getElementById('status').value = task.status || 'offen';
+  document.getElementById('task-note').value = task.note || '';
+  if (task.discriminator === 'LearnSession' && task.courseID) {
+    document.getElementById('task-course').value = task.courseID;
+  }
+  if (task.discriminator === 'FixedTask') {
+    document.getElementById('type').value = task.type || 'Arbeit';
+    document.getElementById('recurring').checked = task.recurring === 1;
+  }
+}
+
+// Notiz automatisch mit dem Material-Ziel des gewählten Kurses vorbefüllen
+// (nur wenn die Notiz noch leer ist, um eigene Eingaben nicht zu überschreiben)
+document.getElementById('task-course').addEventListener('change', () => {
+  const noteField = document.getElementById('task-note');
+  if (noteField.value.trim() !== '') return;
+  const course = allCoursesCache.find(c => c.courseID === Number(document.getElementById('task-course').value));
+  if (course && course.materialGoal) {
+    noteField.value = course.materialGoal;
+  }
+});
+
 document.getElementById('task-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!requireActiveUser()) return;
@@ -821,6 +934,7 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
       description: document.getElementById('description').value,
       location: document.getElementById('location').value,
       status: document.getElementById('status').value,
+      note: document.getElementById('task-note').value,
       discriminator,
       courseID: discriminator === 'LearnSession'
         ? Number(document.getElementById('task-course').value) || null
@@ -830,11 +944,15 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
         ? (document.getElementById('recurring').checked ? 1 : 0)
         : null,
     };
-    await api('/tasks', { method: 'POST', body: JSON.stringify(body) });
-    showToast('Task angelegt.');
-    e.target.reset();
-    document.getElementById('learnsession-fields').classList.remove('hidden');
-    document.getElementById('fixedtask-fields').classList.add('hidden');
+
+    if (editingTaskFormID) {
+      await api(`/tasks/${editingTaskFormID}`, { method: 'PUT', body: JSON.stringify(body) });
+      showToast('Task aktualisiert.');
+    } else {
+      await api('/tasks', { method: 'POST', body: JSON.stringify(body) });
+      showToast('Task angelegt.');
+    }
+    setTaskFormEditMode(null);
     await loadTasks();
   } catch (err) {
     showToast('Fehler: ' + err.message, true);
@@ -844,14 +962,22 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
 async function loadTasks() {
   const tasks = await api('/tasks');
 
+  const statusOptions = ['offen', 'in Bearbeitung', 'erledigt'];
   const tbody = document.getElementById('task-list');
-  tbody.innerHTML = tasks.map(t => `
+  tbody.innerHTML = tasks.map(task => `
     <tr>
-      <td>${t.taskName}</td>
-      <td>${t.discriminator}</td>
-      <td>${t.status ?? ''}</td>
-      <td>${t.location ?? ''}</td>
-      <td><button class="secondary" data-delete-task="${t.taskID}">Löschen</button></td>
+      <td>${task.taskName}</td>
+      <td>${task.discriminator}</td>
+      <td>
+        <select class="quick-status" data-task-id="${task.taskID}">
+          ${statusOptions.map(s => `<option value="${s}" ${task.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td>${task.location ?? ''}</td>
+      <td>
+        <button class="secondary" data-edit-task="${task.taskID}">${t('common.edit')}</button>
+        <button class="secondary" data-delete-task="${task.taskID}">${t('common.delete')}</button>
+      </td>
     </tr>
   `).join('') || '<tr><td colspan="5" class="hint">Noch keine Tasks.</td></tr>';
 
@@ -860,10 +986,29 @@ async function loadTasks() {
     .map(t => `<option value="${t.taskID}">${t.taskName} (${t.discriminator})</option>`)
     .join('');
 
+  tbody.querySelectorAll('.quick-status').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      await api(`/tasks/${sel.dataset.taskId}/status`, { method: 'PUT', body: JSON.stringify({ status: sel.value }) });
+      showToast('Status aktualisiert.');
+      await loadEntries(); // Dashboard/offene Aufgaben aktualisieren
+    });
+  });
+
+  tbody.querySelectorAll('[data-edit-task]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const task = tasks.find(t => t.taskID === Number(btn.dataset.editTask));
+      if (task) {
+        setTaskFormEditMode(task);
+        document.getElementById('task-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  });
+
   tbody.querySelectorAll('[data-delete-task]').forEach(btn => {
     btn.addEventListener('click', async () => {
       await api(`/tasks/${btn.dataset.deleteTask}`, { method: 'DELETE' });
       showToast('Task gelöscht.');
+      if (editingTaskFormID === Number(btn.dataset.deleteTask)) setTaskFormEditMode(null);
       await loadTasks();
     });
   });
@@ -876,10 +1021,12 @@ const entryModal = document.getElementById('entry-modal');
 document.getElementById('open-entry-modal-btn').addEventListener('click', () => {
   if (!requireActiveUser()) return;
   entryModal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
 });
 
 function closeEntryModal() {
   entryModal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
 }
 
 document.getElementById('close-entry-modal').addEventListener('click', closeEntryModal);
@@ -897,6 +1044,7 @@ document.getElementById('entry-form').addEventListener('submit', async (e) => {
       startDateTime: document.getElementById('startDateTime').value,
       endDateTime: document.getElementById('endDateTime').value,
       reminder: document.getElementById('reminder').value,
+      reminderDaysBefore: Number(document.getElementById('reminderDaysBefore').value) || null,
     };
     await api('/calendar-entries', { method: 'POST', body: JSON.stringify(body) });
     showToast('Kalendereintrag angelegt.');
@@ -976,6 +1124,17 @@ function formatCandidateLine(c) {
 const WEEKDAY_PATTERN = /montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|\bmo\.?|\bdi\.?|\bmi\.?|\bdo\.?|\bfr\.?|\bsa\.?|\bso\.?|\d{1,2}\.\d{1,2}\.?|\d{1,2}\.\s*(januar|februar|märz|april|mai|juni|juli|august|september|oktober|november|dezember)/i;
 
 const chatLog = document.getElementById('chat-log');
+const chatPanel = document.getElementById('chat-panel');
+
+document.getElementById('chat-bubble-toggle').addEventListener('click', () => {
+  chatPanel.classList.toggle('hidden');
+  if (!chatPanel.classList.contains('hidden')) {
+    document.getElementById('change-description').focus();
+  }
+});
+document.getElementById('chat-panel-close').addEventListener('click', () => {
+  chatPanel.classList.add('hidden');
+});
 let pendingClarificationContext = null;
 
 function appendChatMessage(role, contentHTML) {
@@ -1006,23 +1165,13 @@ document.getElementById('optimize-form').addEventListener('submit', async (e) =>
     : typedText;
   pendingClarificationContext = null;
 
-  // Bei Monatsansicht muss der Prompt einen konkreten Tag/Wochentag nennen,
-  // sonst wäre der Bezug zu unscharf ("diese Woche" ergibt in der Monatsansicht keinen Sinn)
-  if (calendarView === 'month' && !WEEKDAY_PATTERN.test(changeDescription)) {
-    appendChatMessage('assistant', t('chat.monthNeedsDay'));
-    return;
-  }
-
-  // Zeitraum = aktuell angezeigte Woche bzw. angezeigter Monat
-  let rangeStart, rangeEnd;
-  if (calendarView === 'week') {
-    rangeStart = startOfWeek(calendarAnchor);
-    rangeEnd = new Date(rangeStart);
-    rangeEnd.setDate(rangeEnd.getDate() + 7);
-  } else {
-    rangeStart = new Date(calendarAnchor.getFullYear(), calendarAnchor.getMonth(), 1);
-    rangeEnd = new Date(calendarAnchor.getFullYear(), calendarAnchor.getMonth() + 1, 1);
-  }
+  // Der Chat ist jetzt überall sichtbar, nicht mehr an die Kalenderansicht
+  // gebunden - daher ein festes, großzügiges Zeitfenster statt der zuvor
+  // angezeigten Woche/Monat, damit z. B. "wann ist meine nächste
+  // Lernsession?" auch über die aktuelle Woche hinaus beantwortet werden kann.
+  const rangeStart = new Date();
+  const rangeEnd = new Date();
+  rangeEnd.setDate(rangeEnd.getDate() + 30);
 
   const thinkingMsg = appendChatMessage('assistant', `<em>${t('chat.thinking')}</em>`);
 
@@ -1042,6 +1191,11 @@ document.getElementById('optimize-form').addEventListener('submit', async (e) =>
     if (preview.needsClarification) {
       pendingClarificationContext = changeDescription;
       appendChatMessage('assistant', preview.question);
+      return;
+    }
+
+    if (preview.answer) {
+      appendChatMessage('assistant', preview.answer);
       return;
     }
 
@@ -1117,6 +1271,21 @@ function getWeekdayLabels() {
 let calendarView = 'week';
 let calendarAnchor = new Date();
 let allEntries = [];
+let holidaysByDate = {}; // 'YYYY-MM-DD' -> Name
+
+async function loadHolidays() {
+  const currentYear = new Date().getFullYear();
+  try {
+    const [thisYear, nextYear] = await Promise.all([
+      api(`/holidays/${currentYear}`),
+      api(`/holidays/${currentYear + 1}`),
+    ]);
+    holidaysByDate = {};
+    [...thisYear, ...nextYear].forEach(h => { holidaysByDate[h.date] = h.name; });
+  } catch (err) {
+    console.warn('Feiertage konnten nicht geladen werden:', err);
+  }
+}
 let taskInfoById = {};
 
 document.querySelectorAll('.view-btn').forEach(btn => {
@@ -1161,6 +1330,11 @@ function isSameDay(a, b) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+function toLocalDateKey(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 function eventClassFor(task) {
   if (!task) return 'event-sonstiges';
   if (task.discriminator === 'LearnSession') return 'event-kurse';
@@ -1176,7 +1350,54 @@ async function loadEntries() {
   updateGenerateButtonLabel();
   renderCalendar();
   renderDashboard();
+  checkDueReminders();
 }
+
+/**
+ * Prüft, ob ein Kalendereintrag mit gesetztem reminderDaysBefore innerhalb
+ * dieses Zeitraums vor seinem Start liegt, und zeigt dafür ein
+ * Erinnerungs-Pop-Up. Jeder Eintrag wird pro Kalendertag nur einmal
+ * angezeigt (Merker in localStorage).
+ */
+function checkDueReminders() {
+  const todayKey = toLocalDateKey(new Date());
+  const shownKey = 'shownReminders';
+  let shown = {};
+  try {
+    shown = JSON.parse(localStorage.getItem(shownKey) || '{}');
+  } catch {
+    shown = {};
+  }
+
+  const now = new Date();
+  const due = allEntries.filter(en => {
+    if (!en.reminderDaysBefore && en.reminderDaysBefore !== 0) return false;
+    const start = new Date(en.startDateTime);
+    const daysUntil = (start - now) / (24 * 3600 * 1000);
+    if (daysUntil < 0 || daysUntil > en.reminderDaysBefore) return false;
+    return shown[en.entryID] !== todayKey;
+  });
+
+  if (due.length === 0) return;
+
+  const list = document.getElementById('reminder-list');
+  list.innerHTML = due.map(en => {
+    const task = taskInfoById[en.taskID];
+    const start = new Date(en.startDateTime).toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return `<li>🔔 ${task ? task.taskName : 'Task ' + en.taskID} – ${start}</li>`;
+  }).join('');
+
+  due.forEach(en => { shown[en.entryID] = todayKey; });
+  localStorage.setItem(shownKey, JSON.stringify(shown));
+
+  document.getElementById('reminder-modal').classList.remove('hidden');
+  document.body.classList.add('modal-open');
+}
+
+document.getElementById('close-reminder-modal').addEventListener('click', () => {
+  document.getElementById('reminder-modal').classList.add('hidden');
+  document.body.classList.remove('modal-open');
+});
 
 function updateGenerateButtonLabel() {
   const hasLearnSessions = allEntries.some(en => taskInfoById[en.taskID]?.discriminator === 'LearnSession');
@@ -1242,14 +1463,14 @@ searchInput.addEventListener('input', () => {
   }
   if (taskMatches.length) {
     sections.push(`<div class="search-group-label">✓ Aufgaben &amp; Termine</div>` +
-      taskMatches.map(t => `<button type="button" class="search-result-item" data-view="kurse">${t.discriminator === 'LearnSession' ? '📘' : '✓'} ${t.taskName}</button>`).join(''));
+      taskMatches.map(t => `<button type="button" class="search-result-item" data-view="aufgaben">${t.discriminator === 'LearnSession' ? '📘' : '✓'} ${t.taskName}</button>`).join(''));
   }
   if (entryMatches.length) {
     sections.push(`<div class="search-group-label">📅 Kalendereinträge</div>` +
       entryMatches.map(en => {
         const task = taskInfoById[en.taskID];
         const date = new Date(en.startDateTime).toLocaleDateString(localeTag());
-        return `<button type="button" class="search-result-item" data-view="kalender">📅 ${task.taskName} (${date})</button>`;
+        return `<button type="button" class="search-result-item" data-view="kalender" data-entry-id="${en.entryID}" data-entry-start="${en.startDateTime}">📅 ${task.taskName} (${date})</button>`;
       }).join(''));
   }
 
@@ -1258,11 +1479,34 @@ searchInput.addEventListener('input', () => {
   searchResults.querySelectorAll('.search-result-item').forEach(btn => {
     btn.addEventListener('click', () => {
       switchView(btn.dataset.view);
+      if (btn.dataset.entryId) {
+        jumpToCalendarEntry(Number(btn.dataset.entryId), btn.dataset.entryStart);
+      }
       searchResults.classList.add('hidden');
       searchInput.value = '';
     });
   });
 });
+
+/**
+ * Springt im Kalender zur Woche des angegebenen Termins und hebt die
+ * entsprechende Kachel kurz farblich hervor.
+ */
+function jumpToCalendarEntry(entryID, startDateTime) {
+  calendarView = 'week';
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'week'));
+  calendarAnchor = new Date(startDateTime);
+  renderCalendar();
+
+  setTimeout(() => {
+    const chip = document.querySelector(`[data-entry-id="${entryID}"]`);
+    if (chip) {
+      chip.classList.add('search-highlight');
+      chip.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setTimeout(() => chip.classList.remove('search-highlight'), 2500);
+    }
+  }, 0);
+}
 
 document.addEventListener('click', (e) => {
   if (!searchResults.contains(e.target) && e.target !== searchInput) {
@@ -1310,11 +1554,15 @@ function openEditEntryModal(entry) {
   document.getElementById('edit-startDateTime').value = toLocalInputValue(entry.startDateTime);
   document.getElementById('edit-endDateTime').value = toLocalInputValue(entry.endDateTime);
   document.getElementById('edit-reminder').value = entry.reminder || '';
+  document.getElementById('edit-reminderDaysBefore').value = entry.reminderDaysBefore ?? '';
+  document.getElementById('edit-taskStatus').value = task?.status || 'offen';
   editEntryModal.classList.remove('hidden');
+  document.body.classList.add('modal-open');
 }
 
 function closeEditEntryModal() {
   editEntryModal.classList.add('hidden');
+  document.body.classList.remove('modal-open');
   editingEntryID = null;
   editingTaskID = null;
 }
@@ -1334,14 +1582,21 @@ document.getElementById('edit-entry-form').addEventListener('submit', async (e) 
       await api(`/tasks/${editingTaskID}/rename`, { method: 'PUT', body: JSON.stringify({ taskName: newTaskName }) });
     }
 
+    const newStatus = document.getElementById('edit-taskStatus').value;
+    if (editingTaskID && newStatus !== taskInfoById[editingTaskID]?.status) {
+      await api(`/tasks/${editingTaskID}/status`, { method: 'PUT', body: JSON.stringify({ status: newStatus }) });
+    }
+
     const body = {
       startDateTime: document.getElementById('edit-startDateTime').value,
       endDateTime: document.getElementById('edit-endDateTime').value,
       reminder: document.getElementById('edit-reminder').value,
+      reminderDaysBefore: Number(document.getElementById('edit-reminderDaysBefore').value) || null,
     };
     await api(`/calendar-entries/${editingEntryID}`, { method: 'PUT', body: JSON.stringify(body) });
     showToast('Kalendereintrag aktualisiert.');
     closeEditEntryModal();
+    await loadTasks();
     await loadEntries();
   } catch (err) {
     showToast('Fehler: ' + err.message, true);
@@ -1390,6 +1645,12 @@ function renderWeekView() {
   days.forEach((d, i) => {
     const header = document.createElement('div');
     header.className = 'week-header';
+    if (isSameDay(d, new Date())) header.classList.add('today');
+    const holidayKey = toLocalDateKey(d);
+    if (holidaysByDate[holidayKey]) {
+      header.classList.add('holiday');
+      header.title = holidaysByDate[holidayKey];
+    }
     header.textContent = `${getWeekdayLabels()[i]} ${d.getDate()}.${d.getMonth() + 1}.`;
     header.style.gridColumn = i + 2;
     header.style.gridRow = 1;
@@ -1414,6 +1675,7 @@ function renderWeekView() {
     for (let day = 0; day < 7; day++) {
       const cell = document.createElement('div');
       cell.className = 'week-cell';
+      if (isSameDay(days[day], new Date())) cell.classList.add('today-col');
       cell.style.gridColumn = day + 2;
       cell.style.gridRow = slot + 2;
       grid.appendChild(cell);
@@ -1439,6 +1701,7 @@ function renderWeekView() {
     const task = taskInfoById[en.taskID];
     const chip = document.createElement('div');
     chip.className = `week-event ${eventClassFor(task)}`;
+    chip.dataset.entryId = en.entryID;
     chip.style.gridColumn = dayIndex + 2;
     chip.style.gridRow = `${startSlot + 2} / ${endSlot + 2}`;
     chip.textContent = task ? task.taskName : `Task ${en.taskID}`;
@@ -1480,6 +1743,11 @@ function renderMonthView() {
     cell.className = 'month-day';
     if (day.getMonth() !== month) cell.classList.add('outside');
     if (isSameDay(day, today)) cell.classList.add('today');
+    const holidayKey = toLocalDateKey(day);
+    if (holidaysByDate[holidayKey]) {
+      cell.classList.add('holiday');
+      cell.title = holidaysByDate[holidayKey];
+    }
 
     const dayNumber = document.createElement('div');
     dayNumber.className = 'day-number';
@@ -1495,6 +1763,7 @@ function renderMonthView() {
       const task = taskInfoById[en.taskID];
       const chip = document.createElement('div');
       chip.className = `event-chip ${eventClassFor(task)}`;
+      chip.dataset.entryId = en.entryID;
       chip.textContent = `${start.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' })} ${task ? task.taskName : ''}`;
       chip.addEventListener('click', () => openEditEntryModal(en));
       cell.appendChild(chip);
@@ -1512,6 +1781,7 @@ applyLanguage(currentLang);
 
 (async function init() {
   try {
+    await loadHolidays();
     await loadUsers();
     await refreshActiveUserDisplay();
     await loadProfileIntoForm();

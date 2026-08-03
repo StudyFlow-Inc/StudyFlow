@@ -16,16 +16,20 @@
  * Intervalle (z. B. FixedTask-Termine wie Arbeit/Vorlesung).
  * excludedWeekdays: Array von 1 (Montag) bis 7 (Sonntag) - diese Tage
  * werden komplett übersprungen (keine Lernzeit an diesen Tagen).
+ * excludedDates: Array konkreter Daten ("YYYY-MM-DD", z. B. Feiertage) -
+ * diese einzelnen Tage werden ebenfalls übersprungen.
  */
-function generateFreeSlots({ startDate, days, dayStartHour, dayEndHour, busyIntervals, excludedWeekdays = [] }) {
+function generateFreeSlots({ startDate, days, dayStartHour, dayEndHour, busyIntervals, excludedWeekdays = [], excludedDates = [] }) {
   const slots = [];
   const excludedJsDays = new Set(excludedWeekdays.map((wd) => Number(wd) % 7));
+  const excludedDateSet = new Set(excludedDates);
 
   for (let d = 0; d < days; d++) {
     const day = new Date(startDate);
     day.setDate(day.getDate() + d);
 
     if (excludedJsDays.has(day.getDay())) continue;
+    if (excludedDateSet.has(toLocalISOString(day).slice(0, 10))) continue;
 
     const dayStart = new Date(day);
     dayStart.setHours(dayStartHour, 0, 0, 0);
@@ -220,10 +224,35 @@ function toLocalISOString(date) {
   );
 }
 
+/**
+ * Rechnet den im Kurs eingegebenen Zeitaufwand (je nach workloadUnit:
+ * insgesamt / pro Woche / pro Monat) auf die tatsächlich noch benötigten
+ * Gesamtstunden hoch. Bei "week"/"month" wird die Anzahl verbleibender
+ * Wochen bis semesterEnd genutzt (Standard: 14 Wochen, falls kein
+ * Semesterende bekannt ist oder es bereits vorbei ist).
+ */
+function resolveCourseWorkloadHours(course, semesterEndStr) {
+  const raw = course.workload || 0;
+  const unit = course.workloadUnit || 'total';
+  if (unit === 'total') return raw;
+
+  const today = new Date();
+  const end = semesterEndStr ? new Date(semesterEndStr) : null;
+  const DEFAULT_WEEKS = 14;
+
+  let weeksRemaining = DEFAULT_WEEKS;
+  if (end && !isNaN(end) && end > today) {
+    weeksRemaining = Math.max(1, (end - today) / (7 * 24 * 3600 * 1000));
+  }
+
+  return unit === 'week' ? raw * weeksRemaining : raw * (weeksRemaining / 4.345);
+}
+
 module.exports = {
   generateFreeSlots,
   allocateSessions,
   parsePreferredWindows,
   splitSlotsByPreference,
   toLocalISOString,
+  resolveCourseWorkloadHours,
 };

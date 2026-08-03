@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const db = require('./db');
 
 const userRouter = require('./routes/user');
@@ -22,6 +23,25 @@ app.get('/api/health', (req, res) => {
   } catch (err) {
     res.status(500).json({ server: 'läuft', db: 'Fehler', error: err.message });
   }
+});
+
+// Backup: liefert die komplette SQLite-Datei zum Download
+app.get('/api/backup', (req, res) => {
+  const dbPath = path.join(__dirname, 'data', 'lernplaner.db');
+  res.download(dbPath, 'studyflow-backup.db', (err) => {
+    if (err) {
+      console.error('Fehler beim Backup-Download:', err);
+      if (!res.headersSent) res.status(500).json({ error: 'Backup konnte nicht erstellt werden.' });
+    }
+  });
+});
+
+// Gesetzliche Feiertage (Deutschland) über die kostenlose Nager.Date-API -
+// keine Anmeldung/API-Key nötig.
+const { getHolidays } = require('./holidays');
+app.get('/api/holidays/:year', async (req, res) => {
+  const holidays = await getHolidays(req.params.year);
+  res.json(holidays);
 });
 
 app.use('/api/users', userRouter);
