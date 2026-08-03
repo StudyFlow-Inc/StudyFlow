@@ -149,12 +149,6 @@ for (let d = new Date(rangeStart); d <= rangeEnd; d.setDate(d.getDate() + 1)) {
 
 // ---------- 4. Einmalige Termine ----------
 
-const technikerTaskID = db.prepare(`
-  INSERT INTO task (taskName, description, location, status, discriminator, courseID, type, recurring, learnable)
-  VALUES ('Techniker-Termin', NULL, 'Zuhause', 'offen', 'FixedTask', NULL, 'Sonstiges', 0, 0)
-`).run().lastInsertRowid;
-insertEntrySafe(userID, technikerTaskID, '2026-08-14T08:00:00', '2026-08-14T16:00:00', 1, 'Techniker-Termin (14.08.2026, 8-16 Uhr - fällt auf einen Arbeits-Freitag)');
-
 const arztTaskID = db.prepare(`
   INSERT INTO task (taskName, description, location, status, discriminator, courseID, type, recurring, learnable)
   VALUES ('Arzttermin', NULL, NULL, 'offen', 'FixedTask', NULL, 'Sonstiges', 0, 0)
